@@ -1,3 +1,5 @@
+from urllib import request
+
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.db import connection
@@ -44,7 +46,7 @@ def editar_perfil(request):
 
             cursor.execute(
                 """
-                EXEC sp_actualizar_nickname %s, %s
+                EXEC Persona.sp_actualizar_nickname %s, %s
                 """,
                 [
                     usuario_id,
@@ -52,9 +54,8 @@ def editar_perfil(request):
                 ]
             )
 
-        request.session[
-            'nombre'
-        ] = nickname
+        request.session['nombre'] = nickname
+        request.session['nickname'] = nickname
 
         messages.success(
             request,
@@ -90,28 +91,18 @@ def cambiar_password(request):
 
     if request.method == 'POST':
 
-        actual = request.POST.get(
-            'actual'
-        )
+        actual = request.POST.get('password_actual')
+        nueva = request.POST.get('password_nueva')
+        confirmar = request.POST.get('password_confirmar')
 
-        nueva = request.POST.get(
-            'nueva'
-        )
-
-        confirmar = request.POST.get(
-            'confirmar'
-        )
+        if not actual or not nueva or not confirmar:
+            messages.error(request, 'Por favor completa todos los campos.')
+            return redirect('cambiar_password')
 
         if nueva != confirmar:
+            messages.error(request, 'Las contraseñas no coinciden')
+            return redirect('cambiar_password')
 
-            messages.error(
-                request,
-                'Las contraseñas no coinciden'
-            )
-
-            return redirect(
-                'cambiar_password'
-            )
 
         try:
 

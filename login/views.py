@@ -9,25 +9,18 @@ def login_custom(request):
         email_input = request.POST.get('email')
         password_input = request.POST.get('password')
         
-        # 1. Encriptamos la clave que escribió el usuario (SHA-256 a Hexadecimal en Mayúsculas)
-        # Esto genera exactamente el mismo código que hace SQL Server con CONVERT(..., 2)
         hashed_password = hashlib.sha256(password_input.encode('utf-8')).hexdigest().upper()
         
         try:
-            # 2. Buscamos en la BD comparando el correo y el HASH (no el texto plano)
             usuario_valido = PersonaUsuario.objects.get(email=email_input, password=hashed_password)
             
-            # 3. Si coincide, guardamos la sesión
             request.session['usuario_id'] = usuario_valido.usuarioid
             request.session['nickname'] = usuario_valido.nickname
             request.session['rol'] = usuario_valido.rolperfil
             
-            # 4. Redirigimos al panel de usuarios
-            # Cambia 'lista_usuarios' por 'listar_usuarios'
             return redirect('dashboard_negocio')
             
         except PersonaUsuario.DoesNotExist:
-            # Si el usuario no existe o la clave no coincide, mandamos error
             messages.error(request, "El correo electrónico o la contraseña son incorrectos.")
             
     return render(request, 'login.html')

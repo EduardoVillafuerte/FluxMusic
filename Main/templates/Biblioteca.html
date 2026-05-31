@@ -1,0 +1,153 @@
+{% extends 'Mainbase.html' %}
+{% load static %}
+
+{% block title %} Tu Biblioteca - FluxMusic {% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Tabs adaptados a tus colores */
+    .flux-tabs {
+        border-bottom: 1px solid #2a2f3a;
+        margin-bottom: 2rem;
+    }
+    .flux-tabs .nav-link {
+        color: #8a94a6;
+        font-weight: 600;
+        border: none;
+        background: transparent;
+        padding: 10px 20px;
+        transition: 0.3s;
+    }
+    .flux-tabs .nav-link:hover {
+        color: #fff;
+    }
+    .flux-tabs .nav-link.active {
+        color: #2fdbb7;
+        border-bottom: 2px solid #2fdbb7;
+        text-shadow: 0 0 8px rgba(47, 219, 183, 0.5);
+    }
+
+    /* Tarjetas usando tu mismo fondo y bordes */
+    .library-card {
+        background: #222630;
+        border-radius: 18px;
+        padding: 1.5rem;
+        border: 1px solid #2a2f3a;
+        transition: .3s;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    .library-card:hover {
+        transform: translateY(-4px);
+        border-color: #bc42ca; /* Tu morado en hover */
+        box-shadow: 0 0 15px rgba(188, 66, 202, 0.15);
+    }
+    .library-icon {
+        font-size: 2.5rem;
+        color: #2fdbb7; /* Tu verde neón */
+        margin-bottom: 1rem;
+    }
+    .library-title {
+        color: #fff;
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    .library-subtitle {
+        color: #8a94a6; /* Tu color de subtítulo */
+        font-size: 0.85rem;
+        margin: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-xl-11">
+
+            <h2 class="mb-4" style="color: white; font-weight: 800; text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);">
+                Tu Biblioteca
+            </h2>
+
+            <ul class="nav flux-tabs" id="libraryTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="playlists-tab" data-bs-toggle="tab" data-bs-target="#playlists" type="button" role="tab">Playlists</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="albumes-tab" data-bs-toggle="tab" data-bs-target="#albumes" type="button" role="tab">Álbumes</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="artistas-tab" data-bs-toggle="tab" data-bs-target="#artistas" type="button" role="tab">Artistas</button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="libraryTabsContent">
+                
+                <div class="tab-pane fade show active" id="playlists" role="tabpanel">
+                    <div class="row g-4">
+                        {% for p in playlists %}
+                        <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+                            <div class="library-card">
+                                <div class="library-icon">
+                                    <i class="fa-solid fa-list-ul"></i>
+                                </div>
+                                <h5 class="library-title">{{ p.Playlist }}</h5>
+                                <p class="library-subtitle">Tu lista</p>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12 text-center py-5">
+                            <p class="subtitle-text">Aún no has creado ninguna Playlist.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="albumes" role="tabpanel">
+                    <div class="row g-4">
+                        {% for a in albumes %}
+                        <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+                            <div class="library-card">
+                                <div class="library-icon">
+                                    <i class="fa-solid fa-compact-disc"></i>
+                                </div>
+                                <h5 class="library-title">{{ a.Album_Guardado }}</h5>
+                                <p class="library-subtitle">{{ a.Artista }}</p>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12 text-center py-5">
+                            <p class="subtitle-text">No tienes álbumes guardados.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="artistas" role="tabpanel">
+                    <div class="row g-4">
+                        {% for art in artistas %}
+                        <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+                            <div class="library-card" style="border-radius: 30px;"> <div class="library-icon" style="color: #bc42ca;"> <i class="fa-solid fa-microphone-lines"></i>
+                                </div>
+                                <h5 class="library-title">{{ art.Artista_Seguido }}</h5>
+                                <p class="library-subtitle">{{ art.Discografica }}</p>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12 text-center py-5">
+                            <p class="subtitle-text">Aún no sigues a ningún artista.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

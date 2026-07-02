@@ -3,481 +3,905 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0">
-
-    <title>
-        {% block title %}
-            FluxMusic
-        {% endblock %}
-    </title>
-
-    <!-- Bootstrap -->
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet">
-
-    <!-- FontAwesome -->
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}FluxMusic{% endblock %}</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
     <style>
-
-        body{
-            background:#050505;
-            color:#fff;
-            font-family:'Segoe UI',sans-serif;
-            margin:0;
-            padding:0;
+        /* Ocultar playlists cuando el sidebar está colapsado */
+        .sidebar.collapsed .playlist-section {
+            display: none;
         }
 
-        /* ===========================
-            NAVBAR
-        =========================== */
-
-        .navbar-flux{
-            background:#1a1d24;
-            border-bottom:1px solid #2a2f3a;
-            padding:14px 30px;
-            position:sticky;
-            top:0;
-            z-index:999;
-            backdrop-filter:blur(12px);
+        /* En el topbar, ocultar info del usuario si está colapsado (opcional si es para el menu desplegable) */
+        /* Si el "colapso" es del sidebar, ocultamos el nombre del perfil */
+        .sidebar.collapsed + .main-container .profile-info {
+            display: none;
         }
 
-        .navbar-wrapper{
-            width:100%;
+        /* Centrar el avatar cuando no hay texto al lado */
+        .sidebar.collapsed + .main-container .profile-trigger {
+            justify-content: center;
+        }
+        .avatar-premium {
+        border: 2px solid #f59e0b !important;
+        }
+        .avatar-normal {
+            border: 2px solid #2a2f3a !important;
+        }
+        :root {
+            --purple:    #7c5cff;
+            --teal:      #2fdbb7;
+            --pink:      #bc42ca;
+            --blue:      #3b82f6;
+            --bg:        #07080d;
+            --sidebar-bg:#0b0d12;
+            --card:      #0e1018;
+            --border:    #1a1e2b;
+            --text:      #dde3f0;
+            --muted:     #505878;
+            --sidebar-w: 240px;
+        }
+        #fullPlayer {
+            opacity: 0;
+            transform: translateY(40px) scale(.97);
+            pointer-events: none;
+            transition: opacity .35s cubic-bezier(.4,0,.2,1), transform .35s cubic-bezier(.4,0,.2,1);
+        }
+        #fullPlayer.active {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+        #fullCover {
+            transition: transform .3s ease;
+        }
+        #fullCover.playing {
+            animation: coverPulse 2.4s ease-in-out infinite;
+        }
+        @keyframes coverPulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 rgba(124,92,255,0); }
+            50% { transform: scale(1.035); box-shadow: 0 0 40px rgba(124,92,255,.35); }
+        }
+        /* ── BUSCADOR ────────────────────────────────── */
+        .search-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0; right: 0;
+            background: #161a24;
+            border: 1px solid #2a2f3a;
+            border-radius: 14px;
+            max-height: 360px;
+            overflow-y: auto;
+            z-index: 500;
+            box-shadow: 0 12px 30px rgba(0,0,0,.5);
+        }
+        .search-dropdown.visible { display: block; }
+        .search-result-item {
+            display: flex; align-items: center; gap: .8rem;
+            padding: .7rem 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid #1a1e2b;
+            transition: background .15s;
+        }
+        .search-result-item:last-child { border-bottom: none; }
+        .search-result-item:hover { background: rgba(124,92,255,.1); }
+        .search-result-icon {
+            width: 34px; height: 34px; border-radius: 8px;
+            background: #141826;
+            display: flex; align-items: center; justify-content: center;
+            font-size: .9rem; flex-shrink: 0;
+        }
+        .search-result-info { flex: 1; min-width: 0; }
+        .search-result-title { font-size: .85rem; font-weight: 600; color: #dde3f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .search-result-artist { font-size: .72rem; color: #505878; }
+        .search-no-results { padding: 1rem; text-align: center; color: #505878; font-size: .85rem; }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+            padding-bottom: 90px;
+        }
+        /* ── REPRODUCTOR SIMULADO ───────────────────── */
+        .player-bar {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 90px;
+            background: var(--sidebar-bg); border-top: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 2rem; z-index: 1000;
+        }
+        
+        .player-left, .player-right { flex: 1; display: flex; align-items: center; }
+        .player-left { gap: 1rem; }
+        .player-left img { 
+            width: 56px; height: 56px; border-radius: 8px; object-fit: cover; 
+            background: #2a2f3a; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .player-track-info { display: flex; flex-direction: column; }
+        .player-title { font-weight: 700; font-size: 0.95rem; color: var(--text); }
+        .player-artist { font-size: 0.8rem; color: var(--muted); }
+        
+        .add-btn { 
+            background: none; border: none; color: var(--muted); 
+            cursor: pointer; font-size: 1.1rem; transition: 0.2s; margin-left: 10px;
+        }
+        .add-btn:hover { color: var(--teal); transform: scale(1.1); }
+        .add-btn.liked { color: #ff5d8f; }
+        .add-btn.liked:hover { color: #ff5d8f; }
+
+        .player-center { flex: 2; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+        .player-controls { display: flex; align-items: center; gap: 1.5rem; }
+        .ctrl-btn { background: none; border: none; color: var(--text); font-size: 1.2rem; cursor: pointer; opacity: 0.7; transition: 0.2s; }
+        .ctrl-btn:hover { opacity: 1; }
+        .play-btn { 
+            background: white; color: black; width: 36px; height: 36px; 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 1; 
+        }
+        .play-btn:hover { transform: scale(1.05); }
+
+        .player-progress { display: flex; align-items: center; gap: 0.8rem; width: 100%; max-width: 500px; }
+        .time { font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+        .progress-bar-bg { flex: 1; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; cursor: pointer; position: relative; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background: var(--purple); width: 0%; border-radius: 2px; transition: width 0.1s linear; }
+        .progress-bar-bg:hover .progress-bar-fill { background: var(--teal); }
+
+        .player-right { justify-content: flex-end; gap: 1rem; color: var(--muted); }
+        .volume-bar { width: 100px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; cursor: pointer; overflow: hidden; }
+        .volume-fill { height: 100%; width: 60%; background: var(--text); border-radius: 2px; }
+
+        /* ── SIDEBAR ──────────────────────────────── */
+        .sidebar {
+            width: var(--sidebar-w);
+            min-height: 100vh;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 100;
+            transition: width 0.3s ease; 
+            overflow-x: hidden;
+        }
+        .sidebar.collapsed { width: 80px; }
+        
+        .sidebar-header {
+            display: flex; align-items: center; justify-content: flex-start;
+            padding: 0 1.4rem; border-bottom: 1px solid var(--border);
+            height: 70px; /* Igual que el topbar para alinear */
+        }
+        .sidebar.collapsed .sidebar-header { justify-content: center; padding: 0; }
+
+        .sidebar-nav { padding: 1.4rem .9rem; flex: 1; display: flex; flex-direction: column; gap: .2rem; }
+        .nav-label { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; color: var(--muted); padding: .5rem .6rem .3rem; margin-top: .4rem; }
+        
+        .nav-item {
+            display: flex; align-items: center; gap: .75rem; padding: .7rem .9rem;
+            border-radius: 10px; color: var(--muted); text-decoration: none;
+            font-size: .9rem; font-weight: 600; transition: background .2s, color .2s; cursor: pointer;
+            white-space: nowrap;
+        }
+        .nav-item i { font-size: 1.1rem; width: 20px; text-align: center; opacity: .7; }
+        .nav-item:hover { background: rgba(255,255,255,.05); color: var(--text); }
+        .nav-item:hover i { opacity: 1; }
+        .nav-item.active { background: rgba(124,92,255,.18); color: #c4b5fd; }
+        .nav-item.active i { opacity: 1; color: var(--purple); }
+
+        /* Ocultar textos cuando está colapsado */
+        .sidebar.collapsed .nav-label,
+        .sidebar.collapsed .nav-item span { display: none; }
+        .sidebar.collapsed .nav-item { justify-content: center; padding-left: 0; padding-right: 0; }
+
+        /* ── MAIN WRAP & TOPBAR ───────────────────── */
+        .main-wrap { 
+            margin-left: var(--sidebar-w); flex: 1; min-height: 100vh; display: flex; flex-direction: column; 
+            transition: margin-left 0.3s ease, width 0.3s ease;
+        }
+        .main-wrap.expanded { margin-left: 80px; width: calc(100% - 80px); }
+        
+        .topbar {
+            height: 70px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 2.5rem; background: var(--bg); 
+            position: sticky; top: 0; z-index: 50; gap: 1rem;
         }
 
-        /* ===========================
-            LOGO
-        =========================== */
+        /* Logo en el Topbar */
+        .topbar-logo {
+            display: flex; align-items: center; gap: .75rem; text-decoration: none; margin-right: 1.5rem;
+        }
+        .topbar-logo img { 
+            width: 40px; height: 40px; object-fit: contain; 
+            filter: drop-shadow(0 0 10px rgba(47,219,183,.6)) drop-shadow(0 0 10px rgba(188,66,202,.6));
+            transition: .3s ease;
+        }
+        .topbar-logo:hover img { transform: scale(1.05); }
+        .topbar-logo h2 { font-family: 'Syne', sans-serif; font-size: 1.25rem; font-weight: 800; color: #fff; letter-spacing: -.3px; margin: 0; }
+        .topbar-logo h2 span { color: var(--purple); }
 
-        .logo-link{
-            text-decoration:none;
+        .search-wrap {
+            display: flex; align-items: center; gap: .6rem;
+            background: var(--card); border: 1px solid var(--border); border-radius: 99px;
+            padding: .5rem 1.2rem; flex: 1; max-width: 420px; transition: border-color .2s, box-shadow .2s;
+        }
+        .search-wrap:focus-within { border-color: rgba(124,92,255,.5); box-shadow: 0 0 0 3px rgba(124,92,255,.1); }
+        .search-wrap i { color: var(--muted); }
+        .search-input { background: none; border: none; outline: none; color: var(--text); font-size: .88rem; font-family: 'DM Sans', sans-serif; width: 100%; }
+        .search-input::placeholder { color: var(--muted); }
+
+        .topbar-right { display: flex; align-items: center; gap: 1rem; flex-shrink: 0; }
+        
+        .profile-pill {
+            display: flex; align-items: center; gap: 0.6rem; background: var(--card);
+            padding: 0.3rem 1.2rem 0.3rem 0.3rem; border-radius: 99px; border: 1px solid var(--border); transition: border-color 0.2s;
+        }
+        .profile-pill:hover { border-color: rgba(124,92,255,.4); }
+        .profile-avatar {
+            width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--purple), var(--pink));
+            display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; color: white;
+        }
+        .profile-info { display: flex; flex-direction: column; }
+        .profile-name { font-size: 0.85rem; font-weight: 700; color: white; line-height: 1.1; margin: 0; }
+        .profile-role { font-size: 0.7rem; color: var(--muted); margin: 0; }
+
+        /* Botón Hamburguesa */
+        .toggle-btn {
+            background: transparent; border: none; color: var(--muted);
+            font-size: 1.4rem; cursor: pointer; transition: color 0.2s; padding: 0;
+        }
+        .toggle-btn:hover { color: var(--text); }
+
+        .main-content {
+            margin-top: 0;
+            padding-top: 1rem; /* Un margen pequeño es suficiente */
+        }
+                /* ── BOTÓN SEGUIR ARTISTA (fullPlayer) ─────────────── */
+        .follow-artist-btn {
+            margin-top: 1.2rem;
+            background: transparent;
+            border: 1.5px solid #7c5cff;
+            color: #a78bfa;
+            padding: .5rem 1.4rem;
+            border-radius: 99px;
+            font-weight: 700;
+            font-size: .85rem;
+            cursor: pointer;
+            display: flex; align-items: center; gap: .5rem;
+            transition: .2s;
+        }
+        .follow-artist-btn:hover { background: rgba(124,92,255,.12); }
+        .follow-artist-btn.following {
+            background: #7c5cff;
+            color: #fff;
+            border-color: #7c5cff;
+
+
+
         }
 
-        .logo-img{
-            width:52px;
-            border-radius:12px;
 
-            filter:
-            drop-shadow(0 0 10px rgba(47,219,183,.35))
-            drop-shadow(0 0 10px rgba(188,66,202,.35));
 
-            transition:.3s;
+        /* ── ANTI-OVERFLOW HORIZONTAL GLOBAL ────────────────── */
+        html, body {
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
+        .main-wrap {
+            overflow-x: hidden;
+            max-width: calc(100vw - var(--sidebar-w));
+        }
+        .main-wrap.expanded {
+            max-width: calc(100vw - 80px);
+        }
+        * {
+            max-width: 100%;
         }
 
-        .logo-img:hover{
-            transform:scale(1.05);
+        /* Cuando el sidebar está contraído, ocultamos elementos que sobran */
+        .sidebar.collapsed .playlist-section, 
+        .sidebar.collapsed .nav-item span,
+        .sidebar.collapsed .profile-info {
+            display: none !important;
         }
 
-        .brand-title{
-            font-size:1.4rem;
-            font-weight:800;
-            margin:0;
-            color:white;
-            text-decoration:none;
-            text-shadow: 0 0 15px rgba(188, 66, 202, 1); /* Efecto neón en título */
+        /* Ajustamos el avatar para que quede centrado al contraer */
+        .sidebar.collapsed .profile-trigger {
+            justify-content: center;
         }
 
-        .brand-title span{
-            color:#bc42ca;
+        /* Opcional: reducimos el padding del header para que no se vea tan vacío */
+        .sidebar.collapsed + .main-container header {
+            padding: 0 1rem;
         }
-
-        /* ===========================
-            ACTION BUTTONS
-        =========================== */
-
-        .action-btn{
-            width:48px;
-            height:48px;
-            border:none;
-            border-radius:50%;
-            background:#222630;
-            color:#d1d5db;
-            transition:.3s;
-
-            display:flex;
-            justify-content:center;
-            align-items:center;
-        }
-
-        .action-btn:hover{
-            background:#2fdbb7;
-            color:#121418;
-            transform:translateY(-2px);
-        }
-
-        /* ===========================
-            PROFILE
-        =========================== */
-
-        .profile-box{
-            display:flex;
-            align-items:center;
-            gap:12px;
-
-            background:#222630;
-            padding:8px 18px;
-            border-radius:50px;
-            border:1px solid #2a2f3a;
-
-            transition:.3s;
-            cursor:pointer;
-        }
-
-        .profile-box:hover{
-            border-color:#bc42ca;
-        }
-
-        .profile-avatar{
-            width:42px;
-            height:42px;
-            border-radius:50%;
-
-            background:linear-gradient(
-                135deg,
-                #2fdbb7,
-                #bc42ca
-            );
-
-            display:flex;
-            justify-content:center;
-            align-items:center;
-
-            color:white;
-            font-weight:700;
-        }
-
-        .profile-name{
-            color:white;
-            font-size:.95rem;
-            margin:0;
-            font-weight:600;
-        }
-
-        .profile-role{
-            color:#8a94a6;
-            font-size:.75rem;
-            margin:0;
-        }
-
-        /* ===========================
-            DROPDOWN
-        =========================== */
-
-        .flux-dropdown{
-            background:#ffffff;
-            border:none;
-            border-radius:18px;
-            padding:10px;
-            min-width:260px;
-            margin-top:12px;
-
-            box-shadow:
-            0 20px 40px rgba(0,0,0,.35);
-        }
-
-        .flux-item{
-            color:#111827 !important;
-            border-radius:12px;
-            padding:13px 16px;
-            font-weight:500;
-            transition:.25s;
-        }
-
-        .flux-item:hover{
-            background:#222630;
-            color:#2fdbb7 !important;
-            transform:translateX(4px);
-        }
-
-        .dropdown-divider{
-            border-color:#e5e7eb;
-        }
-
-        .dropdown-header{
-            color:#6b7280 !important;
-            font-size:.85rem;
-            font-weight:700;
-        }
-
-        /* ===========================
-            CONTENT
-        =========================== */
-
-        .main-content{
-            padding:35px;
-        }
-
-        /* ===========================
-            ALERTS
-        =========================== */
-
-        .alert{
-            border:none;
-            border-radius:14px;
-            padding:14px 20px;
-        }
-
-        .alert-success{
-            background:#163020;
-            color:#8ff0b6;
-        }
-
-        .alert-error,
-        .alert-danger{
-            background:#341212;
-            color:#ff9d9d;
-        }
-
-        /* ===========================
-            MOBILE
-        =========================== */
-
-        @media(max-width:768px){
-
-            .navbar-wrapper{
-                flex-direction:column;
-                gap:20px;
-                align-items:flex-start !important;
-            }
-
-            .right-section{
-                width:100%;
-                justify-content:space-between;
-            }
-
-            .profile-name{
-                font-size:.85rem;
-            }
-
-            .profile-role{
-                font-size:.70rem;
-            }
-        }
-
-                 /* ===== SEARCH ===== */
-
-        .search-box{
-            position:relative;
-            max-width:500px;
-            width:100%;
-        }
-
-        .search-input{
-            width:100%;
-            background:#222630;
-            border:1px solid #2a2f3a;
-            color:white;
-            border-radius:50px;
-            padding:12px 20px 12px 50px;
-            transition:.3s;
-        }
-
-        .search-input:focus{
-            outline:none;
-            border-color:#2fdbb7;
-
-            box-shadow:
-            0 0 0 3px rgba(47,219,183,.15);
-        }
-
-        .search-icon{
-            position:absolute;
-            top:50%;
-            left:18px;
-            transform:translateY(-50%);
-            color:#8a94a6;
-        }
-
 
     </style>
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    {% block extra_css %}
-    {% endblock %}
-
+    
+    {% block extra_css %}{% endblock %}
 </head>
-
 <body>
 
-<!-- NAVBAR -->
-
-<nav class="navbar-flux">
-
-    <div class="d-flex justify-content-between align-items-center navbar-wrapper">
-
-        <!-- LOGO -->
-        <a
-            href="{% url 'dashboard_negocio' %}"
-            class="d-flex align-items-center gap-3 logo-link">
-
-            <img
-                src="{% static 'img/FluxLogo.png' %}"
-                class="logo-img">
-
-            <h2 class="brand-title">
-                FLUX<span>MUSIC</span>
-            </h2>
-
-        </a>
-
-        
-        <!-- Search -->
-        
-        <div class="search-box mx-4 flex-grow-1">
-            
-            <i class="fa-solid fa-magnifying-glass search-icon"></i>
-            
-            <input
-            type="text"
-            class="search-input"
-            placeholder="Buscar canciones, artistas o playlists...">
-            
-        </div>
-
-        <div class="d-none d-lg-flex ms-4 gap-4 align-items-center">
-            <a href="{% url 'mi_biblioteca' %}" class="text-decoration-none" style="color: #2fdbb7; font-weight: 600; text-shadow: 0 0 8px rgba(47, 219, 183, 0.4);">
-                Tu Biblioteca
-            </a>
-        </div>
-        
-        <!-- RIGHT -->
-        <div class="d-flex align-items-center gap-3 right-section">
-
-            <!-- NOTIFICATION -->
-            <button class="action-btn">
-
-                <i class="fa-regular fa-bell"></i>
-
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <button class="toggle-btn" id="toggleSidebar">
+                <i class="fa-solid fa-bars"></i>
             </button>
-
-            <!-- PROFILE -->
-            <div class="dropdown">
-
-                <div
-                    class="profile-box dropdown-toggle border-0"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false">
-
-                    <div class="profile-avatar">
-
-                        {{ request.session.nombre|slice:":1" }}
-
-                    </div>
-
-                    <div>
-
-                        <p class="profile-name">
-
-                            {{ request.session.nickname }}
-
-                        </p>
-
-                        <p class="profile-role">
-
-                            {{ request.session.rol }}
-
-                        </p>
-
-                    </div>
-
-                </div>
-
-                <ul class="dropdown-menu dropdown-menu-end flux-dropdown">
-
-                    <li class="dropdown-header">
-                        Menú
-                    </li>
-
-                    {% if request.session.rol == 'Administrador' %}
-                    <li>
-                        <a
-                            class="dropdown-item flux-item"
-                            href="{% url 'listar_usuarios' %}">
-
-                            <i class="fa-solid fa-users me-2"></i>
-                            Usuarios
-
-                        </a>
-                    </li>
-                    {% endif %}
-
-                    <li>
-                        <a
-                            class="dropdown-item flux-item"
-                            href="{% url 'mi_perfil' %}">
-
-                            <i class="fa-solid fa-user me-2"></i>
-                            Mi Perfil
-
-                        </a>
-                    </li>
-
-                    <li>
-                        <a
-                            class="dropdown-item flux-item"
-                            href="{% url 'editar_perfil' %}">
-
-                            <i class="fa-solid fa-gear me-2"></i>
-                            Configuración
-
-                        </a>
-                    </li>
-
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
-
-                    <li>
-                        <a
-                            class="dropdown-item flux-item text-danger"
-                            href="{% url 'login' %}">
-
-                            <i class="fa-solid fa-right-from-bracket me-2"></i>
-                            Cerrar sesión
-
-                        </a>
-                    </li>
-
-                </ul>
-
-            </div>
-
         </div>
 
+        <nav class="sidebar-nav">
+            <span class="nav-label">Menú</span>
+            <a href="{% url 'Main:dashboard_negocio' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard_negocio' %}active{% endif %}">
+                <i class="fa-solid fa-house"></i> <span>Inicio</span>
+            </a>
+
+            {% if request.session.plan_tipo != 'Premium' %}
+            <a href="{% url 'Main:ver_planes' %}" class="nav-item {% if request.resolver_match.url_name == 'ver_planes' %}active{% endif %}">
+                <i class="fa-solid fa-crown"></i> <span>Planes</span>
+            </a>
+            {% endif %}
+
+            <span class="nav-label">Tú</span>
+            <a href="{% url 'Main:mi_biblioteca' %}" class="nav-item {% if request.resolver_match.url_name == 'mi_biblioteca' %}active{% endif %}" style="color: #2fdbb7; font-weight: 600; text-shadow: 0 0 8px rgba(47, 219, 183, 0.4);">
+                <i class="fa-regular fa-heart"></i> <span>Tu Biblioteca</span>
+            </a>
+
+            {% if request.session.rol == 'Artista' %}
+            <span class="nav-label" style="margin-top: 20px;">Artista</span>
+            <a href="{% url 'Main:subir_cancion' %}" class="nav-item {% if request.resolver_match.url_name == 'subir_cancion' %}active{% endif %}">
+                <i class="fa-solid fa-cloud-arrow-up"></i> <span>Subir Canción</span>
+            </a>
+            <a href="{% url 'Main:estadisticas_artista' %}" class="nav-item {% if request.resolver_match.url_name == 'estadisticas_artista' %}active{% endif %}">
+                <i class="fa-solid fa-chart-line"></i> <span>Mis Estadísticas</span>
+            </a>
+            {% endif %}
+
+            {% if request.session.rol == 'Discografica' %}
+            <span class="nav-label" style="margin-top: 20px;">Discográfica</span>
+            <a href="{% url 'Main:panel_discografica' %}" class="nav-item {% if request.resolver_match.url_name == 'panel_discografica' %}active{% endif %}">
+                <i class="fa-solid fa-link"></i> <span>Vincular Artistas</span>
+            </a>
+            {% endif %}
+
+            <span class="nav-label" style="margin-top: 20px;">Tus Playlists</span>
+            <div class="playlist-list">
+                {% for playlist in playlists %}
+                    <a href="{% url 'Main:playlist_detail' playlist.PlaylistID %}" class="nav-item {% if request.resolver_match.url_name == 'playlist_detail' and playlist.PlaylistID|stringformat:'s' == request.resolver_match.kwargs.playlist_id|stringformat:'s' %}active{% endif %}">
+                        <i class="fa-solid fa-music"></i> <span>{{ playlist.Playlist }}</span>
+                    </a>
+                {% empty %}
+                    <span class="nav-item" style="font-style: italic; pointer-events: none;">
+                        <i class="fa-solid fa-music" style="opacity: 0.3;"></i> <span>Sin playlists</span>
+                    </span>
+                {% endfor %}
+            </div>
+        </nav>
+    </aside>
+
+
+
+    <div class="main-wrap">
+        <header class="topbar">
+            
+            <a href="{% url 'Main:dashboard_negocio' %}" class="topbar-logo">
+                <img src="{% static 'img/FluxLogo.png' %}" alt="FluxMusic">
+                <h2>Flux<span>Music</span></h2>
+            </a>
+
+            <div class="search-wrap" style="position: relative;">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input class="search-input" type="text" id="globalSearchInput" placeholder="Buscar canciones, artistas o playlists..." autocomplete="off">
+                <div id="searchResultsDropdown" class="search-dropdown"></div>
+            </div>
+            
+            <div class="topbar-right">
+                <button class="notif-btn" style="background:transparent; border:none; color:var(--muted); font-size:1.2rem; cursor:pointer;">
+                    <i class="fa-regular fa-bell"></i>
+                </button>
+
+                <div class="dropdown">
+                    <div class="profile-trigger" data-bs-toggle="dropdown" aria-expanded="false" style="cursor:pointer; display:flex; align-items:center; gap:10px;">
+                                
+                                <div class="avatar-container" style="position: relative; width: 40px; height: 40px;">
+                                    
+                                    {% if request.session.plan_tipo == 'Premium' %}
+                                    <div class="premium-crown" style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%) rotate(-5deg); font-size: 1.1rem; color: #f59e0b; text-shadow: 0 0 8px rgba(245,158,11,0.6); z-index: 10; animation: floatCrown 3s ease-in-out infinite;">
+                                        <i class="fa-solid fa-crown"></i>
+                                    </div>
+                                    {% endif %}
+
+                                    <div class="profile-avatar {% if request.session.rol == 'Premium' or request.session.plan_tipo == 'Premium' %}avatar-premium{% else %}avatar-normal{% endif %}" style="width: 100%; height: 100%; background: linear-gradient(135deg, #7c5cff, #bc42ca); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700;">
+                                            {{ request.session.nickname|slice:":1"|upper|default:"U" }}
+                                    </div>
+                                </div>
+
+                                <div class="profile-info">
+                                    <span class="profile-name" style="color:#fff; font-weight:600; font-size:.9rem; display:block;">{{ request.session.nickname|default:"Usuario" }}</span>
+                                    <span class="profile-role" style="color:#8a94a6; font-size:.78rem; display:block;">{{ request.session.rol|default:"Oyente" }}</span>
+                                </div>
+                            </div>
+
+                    <ul class="dropdown-menu dropdown-menu-end" style="background:#1a1d24; border:1px solid #2a2f3a; border-radius:14px; padding:10px; margin-top:15px; min-width: 220px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                        <li class="dropdown-header" style="color:#8a94a6; font-size:.85rem; font-weight:700;">Menú</li>
+                        
+                        {% if request.session.rol == 'Administrador' %}
+                        <li><a class="dropdown-item" href="{% url 'listar_usuarios' %}" style="color:#dde3f0; padding:10px 15px; border-radius:8px; font-weight:500;"><i class="fa-solid fa-users me-2 text-primary"></i> Usuarios</a></li>
+                        {% endif %}
+                        
+                        <li><a class="dropdown-item" href="{% url 'usuarios:mi_perfil' %}" style="color:#dde3f0; padding:10px 15px; border-radius:8px; font-weight:500;"><i class="fa-solid fa-user me-2 text-info"></i> Mi Perfil</a></li>
+                        <li><a class="dropdown-item" href="{% url 'usuarios:editar_perfil' %}" style="color:#dde3f0; padding:10px 15px; border-radius:8px; font-weight:500;"><i class="fa-solid fa-gear me-2 text-secondary"></i> Configuración</a></li>
+                        <li><hr class="dropdown-divider" style="border-color:#2a2f3a;"></li>
+                        
+                        <li><a class="dropdown-item text-danger" href="{% url 'logout' %}" style="padding:10px 15px; border-radius:8px; font-weight:600;"><i class="fa-solid fa-right-from-bracket me-2"></i> Cerrar sesión</a></li>
+                    </ul>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-content">
+            {% block content %}{% endblock %}
+        </div>
     </div>
 
-</nav>
-
-<!-- CONTENT -->
-
-<div class="main-content">
-
-    {% if messages %}
-        {% for message in messages %}
-
-        <div class="alert alert-success mb-4">
-            {{ message }}
+    <div class="player-bar" id="playerBar">
+        <audio id="audioPlayer" preload="none"></audio>
+        <div id="fullPlayer" style="position: fixed; top: 0; left: 0; width: 100%; height: calc(100vh - 90px); background: var(--bg); z-index: 2000; padding: 2rem; overflow-y: auto;">
+            <button onclick="cerrarFullPlayer()" style="background:none; border:none; color:white; font-size:2rem;"><i class="fa-solid fa-chevron-down"></i></button>
+            <div style="display: flex; justify-content: center; align-items: center; height: 80vh; flex-direction: column;">
+                <div id="fullCover" style="width: 300px; height: 300px; border-radius: 20px; background: linear-gradient(135deg, #141826, #1c2030); display:flex; align-items:center; justify-content:center; font-size: 6rem; background-size: cover; background-position: center;">🎵</div>
+                <h1 id="fullTitle" style="margin-top: 20px;">Título</h1>
+                <h3 id="fullArtist" style="color: var(--muted);">Artista</h3>
+                <button id="followArtistBtn" class="follow-artist-btn" data-artist-id="">
+                    <i class="fa-solid fa-user-plus"></i> Seguir
+                </button>
+            </div>
         </div>
+        <div class="player-left">
+            <img src="https://ui-avatars.com/api/?name=FM&background=7c5cff&color=fff&size=56" alt="Cover" id="playerCover">
+            <div class="player-track-info">
+                <span class="player-title" id="playerTitle">Elige una canción</span>
+                <span class="player-artist" id="playerArtist">FluxMusic</span>
+            </div>
+            <button class="add-btn" id="likeCurrentBtn" title="Me gusta" data-cancion-id="">
+                <i class="fa-regular fa-heart" id="likeCurrentIcon"></i>
+            </button>
+        </div>
+        <div class="player-center">
+            <div class="player-controls">
+                <button class="ctrl-btn"><i class="fa-solid fa-backward-step"></i></button>
+                <button class="ctrl-btn play-btn" id="playBtn" onclick="togglePlay()"><i class="fa-solid fa-play" id="playIcon"></i></button>
+                <button class="ctrl-btn"><i class="fa-solid fa-forward-step"></i></button>
+            </div>
+            <div class="player-progress">
+                <span class="time current" id="currentTime">0:00</span>
+                <div class="progress-bar-bg" id="progressBg">
+                    <div class="progress-bar-fill" id="progressFill"></div>
+                </div>
+                <span class="time total" id="totalTime">3:45</span>
+            </div>
+        </div>
+        <div class="player-right">
+            <i class="fa-solid fa-volume-high"></i>
+            <div class="volume-bar">
+                <div class="volume-fill"></div>
+            </div>
+        </div>
+    </div>
 
-        {% endfor %}
-    {% endif %}
+    <!-- 🔑 EL SCRIPT AHORA VA AQUÍ, DESPUÉS de player-bar,
+         para que TODOS los elementos (incluido followArtistBtn) ya existan -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ── UTILIDAD CSRF (Django) ─────────────────────────
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+        const csrftoken = getCookie('csrftoken');
+        let artistasSeguidos = JSON.parse('{{ artistas_seguidos_ids|default:"[]"|escapejs }}');
+        let cancionesGustadas = JSON.parse('{{ canciones_gustadas_ids|default:"[]"|escapejs }}');
 
-    {% block content %}
-    {% endblock %}
+        // ── HISTORIAL EN VIVO ───────────────────────────────
+        function registrarReproduccion(cancionId, titulo, artista, duracionStr, artistaId) {
+            fetch("{% url 'Main:registrar_reproduccion' %}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+                body: JSON.stringify({ cancionId: cancionId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.ok) prependRecentCard(cancionId, titulo, artista, duracionStr, artistaId);
+            })
+            .catch(err => console.error('Error registrando reproducción:', err));
+        }
 
-</div>
+        function prependRecentCard(cancionId, titulo, artista, duracionStr, artistaId) {
+            const row = document.getElementById('recentsRow');
+            const emptyState = document.getElementById('recentsEmptyState');
+            if (emptyState) emptyState.remove();
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+            const card = document.createElement('div');
+            card.className = 'recent-card';
+            card.dataset.id = cancionId;
+            card.dataset.title = titulo;
+            card.dataset.artist = artista;
+            card.dataset.artistId = artistaId || '';
+            card.dataset.duration = duracionStr || '00:03:00';
+            card.innerHTML = `
+                <div class="recent-thumb">
+                    <div class="thumb-placeholder">🎵</div>
+                    <div class="play-overlay">
+                        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </div>
+                </div>
+                <div class="recent-song">${titulo}</div>
+                <div class="recent-artist">${artista}</div>
+            `;
+            card.addEventListener('click', () => {
+                simularCancion(card.dataset.id, card.dataset.title, card.dataset.artist, card.dataset.duration, card.dataset.artistId);
+            });
+            row.prepend(card);
 
-{% block extra_js %}
-{% endblock %}
+            const cards = row.querySelectorAll('.recent-card');
+            if (cards.length > 12) cards[cards.length - 1].remove();
+        }
+
+        // ── AGREGAR A "TUS ME GUSTAS" (botón +) ────────────
+        function agregarABiblioteca(cancionId, btnEl) {
+            fetch("{% url 'Main:agregar_a_biblioteca' %}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+                body: JSON.stringify({ cancionId: cancionId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.ok) {
+                    btnEl.classList.add('added');
+                    btnEl.innerHTML = '<i class="fa-solid fa-check"></i>';
+
+                    // Ya está en la biblioteca: la quitamos de "Recomendado para ti"
+                    const fila = btnEl.closest('.cancion-clickable');
+                    if (fila && fila.closest('#recomendacionesList')) {
+                        fila.style.transition = 'opacity .25s ease';
+                        fila.style.opacity = '0';
+                        setTimeout(() => fila.remove(), 250);
+                    }
+                }
+            })
+            .catch(err => console.error('Error agregando a biblioteca:', err));
+        }
+
+        // ── SEGUIR ARTISTA ──────────────────────────────────
+        function seguirArtista(artistaId, btnEl) {
+            if (!artistaId) return;
+            fetch("{% url 'Main:seguir_artista' %}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+                body: JSON.stringify({ artistaId: artistaId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.ok) {
+                    btnEl.classList.add('following');
+                    btnEl.innerHTML = '<i class="fa-solid fa-check"></i> Siguiendo';
+                    if (!artistasSeguidos.includes(parseInt(artistaId))) {
+                        artistasSeguidos.push(parseInt(artistaId)); // 🔑 recuerda en memoria
+                    }
+                }
+            })
+            .catch(err => console.error('Error siguiendo artista:', err));
+        }
+
+        // ── DEJAR DE SEGUIR ARTISTA ──────────────────────────
+        function dejarDeSeguirArtista(artistaId, btnEl) {
+            if (!artistaId) return;
+            fetch("{% url 'Main:dejar_seguir_artista' %}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+                body: JSON.stringify({ artistaId: artistaId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.ok) {
+                    btnEl.classList.remove('following');
+                    btnEl.innerHTML = '<i class="fa-solid fa-user-plus"></i> Seguir';
+                    artistasSeguidos = artistasSeguidos.filter(id => id !== parseInt(artistaId));
+                }
+            })
+            .catch(err => console.error('Error dejando de seguir artista:', err));
+        }
+
+        // ── LIKE / DISLIKE DE LA CANCIÓN ACTUAL ──────────────
+        function toggleLikeCancion(cancionId, btnEl) {
+            if (!cancionId) return;
+            const icon = document.getElementById('likeCurrentIcon');
+            const yaGustada = cancionesGustadas.includes(parseInt(cancionId));
+            const url = yaGustada
+                ? "{% url 'Main:quitar_de_biblioteca' %}"
+                : "{% url 'Main:agregar_a_biblioteca' %}";
+
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+                body: JSON.stringify({ cancionId: cancionId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.ok) return;
+                if (yaGustada) {
+                    cancionesGustadas = cancionesGustadas.filter(id => id !== parseInt(cancionId));
+                    icon.classList.remove('fa-solid');
+                    icon.classList.add('fa-regular');
+                    btnEl.classList.remove('liked');
+                } else {
+                    cancionesGustadas.push(parseInt(cancionId));
+                    icon.classList.remove('fa-regular');
+                    icon.classList.add('fa-solid');
+                    btnEl.classList.add('liked');
+                }
+            })
+            .catch(err => console.error('Error al dar/quitar me gusta:', err));
+        }
+        // ── ENGANCHAR EVENTOS ───────────────────────────────
+        function attachCancionListeners() {
+            document.querySelectorAll('.recent-card[data-id], .cancion-clickable[data-id]').forEach(el => {
+                el.addEventListener('click', () => {
+                    simularCancion(el.dataset.id, el.dataset.title, el.dataset.artist, el.dataset.duration, el.dataset.artistId);
+                });
+            });
+            document.querySelectorAll('.add-to-lib-btn[data-add-id]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    agregarABiblioteca(btn.dataset.addId, btn);
+                });
+            });
+        }
+        attachCancionListeners();
+
+        document.getElementById('followArtistBtn').addEventListener('click', function() {
+            if (this.classList.contains('following')) {
+                dejarDeSeguirArtista(this.dataset.artistId, this);
+            } else {
+                seguirArtista(this.dataset.artistId, this);
+            }
+        });
+
+        document.getElementById('likeCurrentBtn').addEventListener('click', function() {
+            toggleLikeCancion(this.dataset.cancionId, this);
+        });
+
+        document.getElementById('toggleSidebar').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            const mainWrap = document.querySelector('.main-wrap');
+
+            sidebar.classList.toggle('collapsed');
+            mainWrap.classList.toggle('expanded');
+        });
+
+        // ── BUSCADOR GLOBAL (topbar) ────────────────────────
+    const searchInput = document.getElementById('globalSearchInput');
+    const searchDropdown = document.getElementById('searchResultsDropdown');
+    let searchTimeout;
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const query = this.value.trim();
+
+        if (query.length < 2) {
+            searchDropdown.classList.remove('visible');
+            searchDropdown.innerHTML = '';
+            return;
+        }
+
+        searchTimeout = setTimeout(() => {
+            fetch(`{% url 'Main:buscar_canciones' %}?q=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => renderSearchResults(data.resultados))
+                .catch(err => console.error('Error buscando:', err));
+        }, 300); // debounce de 300ms
+    });
+
+        function renderSearchResults(resultados) {
+            searchDropdown.innerHTML = '';
+
+            if (!resultados || resultados.length === 0) {
+                searchDropdown.innerHTML = '<div class="search-no-results">Sin resultados</div>';
+                searchDropdown.classList.add('visible');
+                return;
+            }
+
+            resultados.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'search-result-item';
+                row.innerHTML = `
+                    <div class="search-result-icon">🎵</div>
+                    <div class="search-result-info">
+                        <div class="search-result-title">${item.titulo}</div>
+                        <div class="search-result-artist">${item.artista || 'Varios Artistas'}</div>
+                    </div>
+                `;
+                row.addEventListener('click', () => {
+                    simularCancion(item.cancionId, item.titulo, item.artista || 'Varios Artistas', item.duracion, item.artistaId);
+                    searchDropdown.classList.remove('visible');
+                    searchInput.value = '';
+                });
+                searchDropdown.appendChild(row);
+            });
+
+            searchDropdown.classList.add('visible');
+        }
+
+        // Cerrar el dropdown al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-wrap')) {
+                searchDropdown.classList.remove('visible');
+            }
+        });
+
+
+        
+
+        // ── REPRODUCTOR CON AUDIO REAL (iTunes) ────────────────
+const audioPlayer = document.getElementById('audioPlayer');
+let isPlaying = false;
+let itunesCache = {}; // evita re-buscar la misma canción dos veces
+
+function formatTime(seconds) {
+    if (!isFinite(seconds) || seconds < 0) return '0:00';
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+}
+
+async function buscarPreviewItunes(titulo, artista) {
+    const cacheKey = `${titulo}|${artista}`;
+    if (itunesCache[cacheKey]) return itunesCache[cacheKey];
+
+    const query = encodeURIComponent(`${titulo} ${artista}`);
+    try {
+        const res = await fetch(`https://itunes.apple.com/search?term=${query}&media=music&limit=1`);
+        const data = await res.json();
+        if (data.results && data.results.length > 0) {
+            const resultado = {
+                previewUrl: data.results[0].previewUrl,
+                artwork: data.results[0].artworkUrl100.replace('100x100', '400x400')
+            };
+            itunesCache[cacheKey] = resultado;
+            return resultado;
+        }
+    } catch (err) {
+        console.error('Error buscando en iTunes:', err);
+    }
+    return null;
+}
+
+function togglePlay() {
+    const playIcon = document.getElementById('playIcon');
+    const cover = document.getElementById('fullCover');
+
+    if (audioPlayer.paused) {
+        audioPlayer.play().catch(err => console.error('Error reproduciendo audio:', err));
+        isPlaying = true;
+        playIcon.classList.remove('fa-play');
+        playIcon.classList.add('fa-pause');
+        cover.classList.add('playing');
+    } else {
+        audioPlayer.pause();
+        isPlaying = false;
+        playIcon.classList.remove('fa-pause');
+        playIcon.classList.add('fa-play');
+        cover.classList.remove('playing');
+    }
+}
+
+function abrirFullPlayer() {
+    document.getElementById('fullPlayer').classList.add('active');
+}
+
+function cerrarFullPlayer() {
+    document.getElementById('fullPlayer').classList.remove('active');
+}
+
+// Sincroniza la barra de progreso con el audio real
+audioPlayer.addEventListener('timeupdate', () => {
+    if (!audioPlayer.duration) return;
+    const pct = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+    document.getElementById('progressFill').style.width = `${pct}%`;
+    document.getElementById('currentTime').textContent = formatTime(audioPlayer.currentTime);
+});
+
+audioPlayer.addEventListener('loadedmetadata', () => {
+    document.getElementById('totalTime').textContent = formatTime(audioPlayer.duration);
+});
+
+audioPlayer.addEventListener('ended', () => {
+    const playIcon = document.getElementById('playIcon');
+    playIcon.classList.remove('fa-pause');
+    playIcon.classList.add('fa-play');
+    document.getElementById('fullCover').classList.remove('playing');
+    isPlaying = false;
+});
+
+// ── REPRODUCIR CANCIÓN (busca en iTunes + reproduce real) ──
+window.simularCancion = async function(cancionId, titulo, artista, duracionStr, artistaId) {
+    document.getElementById('playerTitle').textContent = titulo;
+    document.getElementById('playerArtist').textContent = artista;
+    document.getElementById('fullTitle').textContent = titulo;
+    document.getElementById('fullArtist').textContent = artista;
+    document.getElementById('totalTime').textContent = duracionStr ? duracionStr.replace(/^00:/, '') : '3:45';
+    document.getElementById('currentTime').textContent = '0:00';
+    document.getElementById('progressFill').style.width = '0%';
+
+    const followBtn = document.getElementById('followArtistBtn');
+    followBtn.dataset.artistId = artistaId || '';
+    if (artistasSeguidos.includes(parseInt(artistaId))) {
+        followBtn.classList.add('following');
+        followBtn.innerHTML = '<i class="fa-solid fa-check"></i> Siguiendo';
+    } else {
+        followBtn.classList.remove('following');
+        followBtn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Seguir';
+    }
+
+    const likeBtn = document.getElementById('likeCurrentBtn');
+    const likeIcon = document.getElementById('likeCurrentIcon');
+    likeBtn.dataset.cancionId = cancionId || '';
+    if (cancionesGustadas.includes(parseInt(cancionId))) {
+        likeBtn.classList.add('liked');
+        likeIcon.classList.remove('fa-regular');
+        likeIcon.classList.add('fa-solid');
+    } else {
+        likeBtn.classList.remove('liked');
+        likeIcon.classList.remove('fa-solid');
+        likeIcon.classList.add('fa-regular');
+    }
+
+    const cover = document.getElementById('fullCover');
+    cover.style.backgroundImage = 'none';
+    cover.textContent = '🎵';
+    cover.classList.remove('playing');
+
+    abrirFullPlayer();
+
+    // Muestra "buscando..." mientras consulta iTunes
+    document.getElementById('playerTitle').textContent = `Buscando: ${titulo}...`;
+
+    const resultado = await buscarPreviewItunes(titulo, artista);
+
+    document.getElementById('playerTitle').textContent = titulo;
+
+    if (resultado && resultado.previewUrl) {
+        audioPlayer.src = resultado.previewUrl;
+        cover.style.backgroundImage = `url('${resultado.artwork}')`;
+        cover.textContent = '';
+        audioPlayer.play().catch(err => console.error('Error al reproducir:', err));
+        isPlaying = true;
+        document.getElementById('playIcon').classList.remove('fa-play');
+        document.getElementById('playIcon').classList.add('fa-pause');
+        cover.classList.add('playing');
+    } else {
+        console.warn(`No se encontró preview en iTunes para "${titulo}" - ${artista}`);
+        audioPlayer.pause();
+        audioPlayer.removeAttribute('src');
+        isPlaying = false;
+        document.getElementById('playIcon').classList.remove('fa-pause');
+        document.getElementById('playIcon').classList.add('fa-play');
+    }
+
+    registrarReproduccion(cancionId, titulo, artista, duracionStr, artistaId);
+};
+
+    </script>
+    {% block extra_js %}{% endblock %}
 
 </body>
 </html>

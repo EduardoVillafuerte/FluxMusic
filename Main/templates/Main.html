@@ -1,413 +1,553 @@
 {% extends 'Mainbase.html' %}
 {% load static %}
 
-
-{% block title %}
-Dashboard - FluxMusic
-{% endblock %}
+{% block title %}Dashboard - FluxMusic{% endblock %}
 
 {% block extra_css %}
+
+
     <style>
-    body{
-        background:#050505 !important;
-        color:#e2e8f0;
-        font-family:'Segoe UI',sans-serif;
-        margin: 0;
-        padding: 0;
-    }
-
-    .main-container {
-        background: #0d0f12;
-        padding: 3rem;
-        min-height: 100vh;
-        max-width: 1200px; /* Limita el ancho para que no se estire demasiado */
-        margin: 0 auto;    /* Esto centra el contenedor en la pantalla */
-    }
-
-    .brand-title {
-        font-size: 1.4rem;
-        font-weight: 800;
-        color: white;
-        text-shadow: 0 0 15px rgba(188, 66, 202, 1); /* Efecto neón en título */
-    }
-    .brand-title span{
-        color:#bc42ca;
-    }
-
-    .subtitle-text{
-        color:#8a94a6;
-    }
-
-    .metric-card{
-        background:#222630;
-        border-radius:18px;
-        padding:1.7rem;
-        border:1px solid #2a2f3a;
-        transition:.3s;
-    }
-
-    .metric-card:hover{
-        transform:translateY(-4px);
-    }
-
-    .metric-label{
-        color:#8a94a6;
-        display:block;
-    }
-
-    .metric-number{
-        font-size:2rem;
-        color:#fff;
-        margin-top:.5rem;
-    }
-
-    .metric-change{
-        color:#2fdbb7;
-    }
-
-    .chart-card, .dashboard-card {
-        background: #121418;
-        border-radius: 0;   /* <--- QUITA LOS REDONDEADOS EN LAS CARTAS */
-        padding: 1.5rem;
-        border: 1px solid #2a2f3a;
-    }
-    .chart-card{
-        min-height:280px;
-        display:flex;
-        flex-direction:column;
-        align-items:center;
-        justify-content:flex-start;
-        padding:2rem;
-    }
-
-    .ring-container{
-        margin-top:20px;
-        margin-bottom:18px;
-    }
-
-    .row.gy-4{
-        width:100%;
-    }
-
-    .chart-title, .section-title {
-        color: #fff;
-        margin-bottom: 1.5rem;
-        text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
-    }
-
-    .chart-subtitle{
-        color:#8a94a6;
-    }
-
-    .music-list {
-        list-style: none;
-        padding: 0;
-    }
-
-    .music-list li {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1rem 0;
-        border-bottom: 1px solid #2a2f3a;
-        color: white;
-        /* Aplicamos el efecto neón directamente al texto de cada fila */
-        text-shadow: 
-            -2px 0px 0px rgba(188, 66, 202, 0.8), 
-            2px 0px 0px rgba(47, 219, 183, 0.8);
-        transition: 0.3s;
-    }
-
-    .music-list li:hover {
-        background: #1a1d24;
-        padding-left: 12px;
-        /* Al pasar el mouse, intensificamos el efecto neón */
-        text-shadow: 
-            -4px 0px 0px rgba(188, 66, 202, 1), 
-            1px 0px 0px rgba(47, 219, 183, 1);
-        box-shadow: inset 0 0 10px rgba(47, 219, 183, 0.1);
-    }
-    .price {
-        color: #2fdbb7;
-        font-weight: bold;
-        text-shadow: 0 0 8px rgba(47, 219, 183, 0.5); /* Neón en precios */
-    }
-
-    /* DONUT RING */
+        .add-to-lib-btn {
+            background: rgba(124,92,255,.12);
+            border: 1px solid rgba(124,92,255,.3);
+            color: #a78bfa;
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: .2s;
+            font-size: .75rem;
+        }
+        .add-to-lib-btn:hover { background: #7c5cff; color: #fff; transform: scale(1.1); }
+        .add-to-lib-btn.added { background: #2fdbb7; border-color: #2fdbb7; color: #07080d; }
 
 
-    .ring-container{
-        display:flex;
-        justify-content:center;
-        align-items:center;
-    }
 
-    .ring{
-        width:160px;
-        height:160px;
-        position:relative;
+        /* ── HERO ────────────────────────────────── */
+        .hero-band {
+            position: relative;
+            overflow: hidden;
+            padding: 3.2rem 2.5rem 2.8rem;
+            background: linear-gradient(135deg, #0f0a1e 0%, #0d1020 50%, #07080d 100%);
+            border-bottom: 1px solid #1a1e2b;
+        }
+        .hero-band::before {
+            content: '';
+            position: absolute;
+            top: -80px; left: -60px;
+            width: 380px; height: 380px;
+            background: radial-gradient(circle, rgba(124,92,255,.22) 0%, transparent 65%);
+            pointer-events: none;
+        }
+        .hero-band::after {
+            content: '';
+            position: absolute;
+            bottom: -100px; right: 10%;
+            width: 300px; height: 300px;
+            background: radial-gradient(circle, rgba(188,66,202,.14) 0%, transparent 65%);
+            pointer-events: none;
+        }
+        .hero-inner { position: relative; z-index: 1; max-width: 580px; }
+        .hero-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            background: rgba(124,92,255,.14);
+            border: 1px solid rgba(124,92,255,.3);
+            border-radius: 99px;
+            padding: .28rem .85rem;
+            font-size: .7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.1px;
+            color: #a78bfa;
+            margin-bottom: 1.1rem;
+        }
+        .hero-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: #7c5cff;
+            box-shadow: 0 0 6px #7c5cff;
+            animation: pdot 2s infinite;
+        }
+        @keyframes pdot {
+            0%,100% { opacity:1; transform:scale(1); }
+            50%      { opacity:.4; transform:scale(.65); }
+        }
+        .hero-title {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(1.9rem, 3.5vw, 3rem);
+            font-weight: 800;
+            line-height: 1.08;
+            letter-spacing: -1.2px;
+            color: #fff;
+            margin-bottom: .9rem;
+        }
+        .hero-title .accent { color: #7c5cff; }
+        .hero-desc {
+            color: #8892aa;
+            font-size: .92rem;
+            line-height: 1.65;
+            max-width: 460px;
+        }
 
-        display:flex;
-        justify-content:center;
-        align-items:center;
-    }
+        /* ── DASH CONTENT ────────────────────────── */
+        .dash-content {
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2.2rem 2.5rem 5rem;
+        }
 
-    .ring svg{
-        width:160px;
-        height:160px;
-    }
+        .section-head {
+            display: flex;
+            align-items: baseline;
+            gap: .9rem;
+            margin-bottom: 1.4rem;
+        }
+        .section-head h2 {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.15rem;
+            font-weight: 730;
+            letter-spacing: -.4px;
+            color: #fff;
+        }
+        .section-head p { color: #505878; font-size: .8rem; }
+        .s-bar {
+            display: inline-block;
+            height: 2.5px; width: 30px;
+            border-radius: 99px;
+            flex-shrink: 0;
+            position: relative; top: -1px;
+        }
 
-    .ring circle{
-        fill:none;
-        stroke-width:12;
-    }
+        /* ── ADN GRID ────────────────────────────── */
+        .adn-grid {
+            display: grid;
+            grid-template-columns: repeat(4,1fr);
+            gap: .9rem;
+            margin-bottom: 3rem;
+        }
+        @media (max-width: 960px) { .adn-grid { grid-template-columns: repeat(2,1fr); } }
+        @media (max-width: 480px) { .adn-grid { grid-template-columns: 1fr; } }
 
-    .ring .bg{
-        stroke:#2a2f3a;
-    }
+        .adn-card {
+            background: #0e1018;
+            border: 1px solid #1a1e2b;
+            border-radius: 18px;
+            padding: 1.4rem 1.1rem 1.6rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: .8rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform .28s, border-color .28s;
+        }
+        .adn-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            opacity: 0;
+            transition: opacity .3s;
+        }
+        .adn-card:nth-child(1)::before { background: linear-gradient(90deg,transparent,rgba(124,92,255,.9),transparent); }
+        .adn-card:nth-child(2)::before { background: linear-gradient(90deg,transparent,rgba(47,219,183,.9),transparent); }
+        .adn-card:nth-child(3)::before { background: linear-gradient(90deg,transparent,rgba(188,66,202,.9),transparent); }
+        .adn-card:nth-child(4)::before { background: linear-gradient(90deg,transparent,rgba(59,130,246,.9),transparent); }
+        .adn-card:hover { transform: translateY(-5px); }
+        .adn-card:hover::before { opacity: 1; }
+        .adn-card:nth-child(1):hover { border-color: rgba(124,92,255,.35); }
+        .adn-card:nth-child(2):hover { border-color: rgba(47,219,183,.35); }
+        .adn-card:nth-child(3):hover { border-color: rgba(188,66,202,.35); }
+        .adn-card:nth-child(4):hover { border-color: rgba(59,130,246,.35); }
 
-    .ring .progress{
-        filter:drop-shadow(0 0 6px rgba(188,66,202,.6));    
-        stroke-linecap:round;
-        stroke-dasharray:377;
-        stroke-dashoffset:calc(
-            377 - (377 * var(--percentage))/100
-        );
+        .adn-label {
+            font-size: .68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.3px;
+            color: #505878;
+        }
 
-        transition:1s ease;
-    }
+        /* ── RING ──────────────────────────────────── */
+        .ring-wrap {
+            width: 130px;
+            height: 130px;
+            position: relative;
+        }
+        .ring-wrap svg { width: 130px; height: 130px; transform: rotate(-90deg); }
+        .ring-wrap circle { fill: none; stroke-width: 9; }
+        .ring-bg   { stroke: #181d2b; }
+        .ring-prog {
+            stroke-dasharray: 283;
+            stroke-dashoffset: calc(283 - (283 * var(--pct)) / 100);
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1.5s cubic-bezier(.4,0,.2,1);
+        }
+        .ring-inner {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: .12rem;
+        }
+        .ring-pct {
+            font-family: 'Inter', sans-serif;
+            font-size: 2rem;
+            font-weight: 800;
+            color: white;
+            line-height: 1;
+        }
+        .ring-sub { font-size: .67rem; color: #505878; text-align: center; max-width: 68px; line-height: 1.2; }
 
-    .ring-text{
-        position:absolute;
-        text-align:center;
-    }
+        /* ── RECENTLY PLAYED ─────────────────────── */
+        .recents-row {
+            display: flex;
+            gap: .8rem;
+            overflow-x: auto;
+            padding-bottom: .5rem;
+            margin-bottom: 3rem;
+            scrollbar-width: thin;
+            scrollbar-color: #1a1e2b transparent;
+        }
+        .recents-row::-webkit-scrollbar { height: 3px; }
+        .recents-row::-webkit-scrollbar-thumb { background: #1a1e2b; border-radius: 99px; }
 
-    .ring-value {
-        font-size: 1.5rem;
-        font-weight: 800;
-        color: #fff;
-        text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-    }
+        .recent-card {
+            flex: 0 0 148px;
+            background: #0e1018;
+            border: 1px solid #1a1e2b;
+            border-radius: 14px;
+            padding: .9rem;
+            display: flex; flex-direction: column; gap: .55rem;
+            cursor: pointer;
+            transition: transform .22s, border-color .22s, box-shadow .22s;
+        }
+        .recent-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(124,92,255,.4);
+            box-shadow: 0 8px 24px rgba(124,92,255,.13);
+        }
+        .recent-thumb {
+            width: 100%; aspect-ratio: 1;
+            border-radius: 9px;
+            background: #141826;
+            overflow: hidden; position: relative;
+        }
+        .recent-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .thumb-placeholder {
+            width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.9rem;
+            background: linear-gradient(135deg, #141826, #1c2030);
+        }
+        .play-overlay {
+            position: absolute; inset: 0;
+            background: rgba(0,0,0,.5);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity .2s; border-radius: 9px;
+        }
+        .play-overlay svg { width: 26px; height: 26px; fill: #fff; }
+        .recent-card:hover .play-overlay { opacity: 1; }
+        .recent-song { font-size: .78rem; font-weight: 700; color: #dde3f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .recent-artist { font-size: .7rem; color: #505878; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: -.25rem; }
 
-    .ring-label{
-        color:#8a94a6;
-        font-size:.78rem;
-        width:90px;
-        line-height:1.2;
-        text-align:center;
-        margin:auto;
-        word-break:break-word;
-    }
+        /* ── BOTTOM GRID ─────────────────────────── */
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        @media (max-width: 768px) { .bottom-grid { grid-template-columns: minmax(0, 1fr); } }
 
-    .chart-card{
-        padding:1.5rem;
-    }
+        .panel {
+            background: #0e1018;
+            min-width: 0;
+            border: 1px solid #1a1e2b;
+            border-radius: 18px;
+            padding: 1.5rem 1.4rem;
+            overflow: hidden;
+        }
+        .panel-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: .25rem; }
+        .panel-sub   { font-size: .78rem; color: #505878; margin-bottom: 1.2rem; }
 
-    .chart-title{
-        margin-bottom:1rem;
-        font-size:1rem;
-    }
-    </style>
+        .mlist { list-style: none; padding: 0; margin: 0; min-width: 0; }
+        .mlist li {
+            display: flex; align-items: center; gap: .8rem;
+            padding: .72rem 0;
+            border-bottom: 1px solid #1a1e2b;
+            transition: padding-left .2s;
+            min-width: 0;
+        }
+        .mlist li:last-child { border-bottom: none; }
+        .mlist li:hover { padding-left: 5px; }
 
+        .track-num { font-size: .72rem; color: #505878; width: 16px; text-align: center; flex-shrink: 0; }
+        .track-dot {
+            width: 34px; height: 34px; border-radius: 8px;
+            background: #141826;
+            display: flex; align-items: center; justify-content: center;
+            font-size: .9rem; flex-shrink: 0;
+        }
+        .track-info { flex: 1; min-width: 0; overflow: hidden; }
+        .track-name { font-size: .83rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .track-streams { font-size: .76rem; color: #2fdbb7; font-weight: 700; flex-shrink: 0; }
+
+        .rec-genre {
+            font-size: .69rem; font-weight: 700;
+            padding: .22rem .6rem; border-radius: 99px; flex-shrink: 0;
+            background: rgba(124,92,255,.14);
+            color: #a78bfa;
+            border: 1px solid rgba(124,92,255,.28);
+            max-width: 90px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        @media (max-width: 1200px) {
+            .rec-genre { display: none; }
+        }
+
+        .add-to-lib-btn { flex-shrink: 0; }
+
+        .empty-state { color: #505878; font-size: .85rem; padding: .8rem 0; }
+
+        /* ── REGALÍAS ────────────────────────────── */
+        .regalias-panel {
+            background: #0e1018;
+            border: 1px solid #1a1e2b;
+            border-radius: 18px;
+            padding: 1.5rem 1.4rem;
+            margin-top: 1rem;
+        }
+        .regal-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: .78rem 0;
+            border-bottom: 1px solid #1a1e2b;
+        }
+        .regal-item:last-child { border-bottom: none; }
+        .regal-name  { font-size: .86rem; font-weight: 600; }
+        .regal-amount { font-size: .9rem; font-weight: 700; color: #2fdbb7; text-shadow: 0 0 12px rgba(47,219,183,.3); }
+        </style>
 {% endblock %}
 
 {% block content %}
-
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-xl-11">
-
-            <div class="main-container">
-
-                <!-- MÉTRICAS SUPERIORES -->
-                <div class="row mb-5 gy-4">
-                    <!-- Título fuera del flujo de las tarjetas -->
-                    <div class="col-12">
-                        <h4 class="section-title mb-1">Tu ADN Musical</h4>
-                        <p class="subtitle-text mb-4">Resumen de tu comportamiento musical</p>
-                    </div>
-                    
-                    <!-- Anillo 1 (Ahora son hijos directos del row mb-5 gy-4) -->
-                    <div class="col-12 col-sm-6 col-lg-3">
-                        <div class="chart-card">
-                            <h6 class="chart-title">Tiempo Escuchado</h6>
-                            <div class="ring" style="--percentage:88">
-                                <svg viewBox="0 0 140 140"><circle class="bg" cx="70" cy="70" r="60"></circle><circle class="progress" cx="70" cy="70" r="60" style="stroke:#7c5cff"></circle></svg>
-                                <div class="ring-text"><div class="ring-value">88%</div><div class="ring-label">Actividad</div></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Anillo 2 -->
-                    <div class="col-12 col-sm-6 col-lg-3">
-                        <div class="chart-card">
-                            <h6 class="chart-title">Género Favorito</h6>
-                            <div class="ring" style="--percentage:82">
-                                <svg viewBox="0 0 140 140"><circle class="bg" cx="70" cy="70" r="60"></circle><circle class="progress" cx="70" cy="70" r="60" style="stroke:#2fdbb7"></circle></svg>
-                                <div class="ring-text"><div class="ring-value">82%</div><div class="ring-label">Rock</div></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Anillo 3 -->
-                    <div class="col-12 col-sm-6 col-lg-3">
-                        <div class="chart-card">
-                            <h6 class="chart-title">Artista Favorito</h6>
-                            <div class="ring" style="--percentage:65">
-                                <svg viewBox="0 0 140 140"><circle class="bg" cx="70" cy="70" r="60"></circle><circle class="progress" cx="70" cy="70" r="60" style="stroke:#bc42ca"></circle></svg>
-                                <div class="ring-text"><div class="ring-value">65%</div><div class="ring-label">Imagine Dragons</div></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Anillo 4 -->
-                    <div class="col-12 col-sm-6 col-lg-3">
-                        <div class="chart-card">
-                            <h6 class="chart-title">Mood del Mes</h6>
-                            <div class="ring" style="--percentage:71">
-                                <svg viewBox="0 0 140 140"><circle class="bg" cx="70" cy="70" r="60"></circle><circle class="progress" cx="70" cy="70" r="60" style="stroke:#3b82f6"></circle></svg>
-                                <div class="ring-text"><div class="ring-value">71%</div><div class="ring-label">Chill</div></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row g-4">
-
-                    <!-- TOP CANCIONES -->
-                    <div class="col-lg-6">
-                        <div class="dashboard-card h-100">
-
-                            <h4 class="section-title">
-                                🎵 Top Canciones
-                            </h4>
-
-                            <ul class="music-list">
-
-                                {% for item in reporte_consumo %}
-                                <li>
-                                    <div>
-                                        <strong>
-                                            {{ item.Cancion }}
-                                        </strong>
-                                    </div>
-
-                                    <span>
-                                        {{ item.Frecuencia }}
-                                        streams
-                                    </span>
-                                </li>
-
-                                {% empty %}
-
-                                <li>
-                                    Sin historial de escucha
-                                </li>
-
-                                {% endfor %}
-
-                            </ul>
-
-                        </div>
-                    </div>
-
-
-                    <!-- RECOMENDACIONES -->
-                    <div class="col-lg-6">
-                        <div class="dashboard-card h-100">
-
-                            <h4 class="section-title">
-                                ✨ Recomendado para ti
-                            </h4>
-
-                            <p class="subtitle-text">
-                                Basado en tu historial musical
-                            </p>
-
-                            <ul class="music-list">
-
-                                {% for item in recomendaciones %}
-                                <li>
-
-                                    <div>
-                                        <strong>
-                                            {{ item.Recomendacion }}
-                                        </strong>
-
-                                        <div>
-                                            {{ item.Artista }}
-                                        </div>
-                                    </div>
-
-                                    <span class="price">
-                                        {{ item.Genero_Musical }}
-                                    </span>
-
-                                </li>
-
-                                {% empty %}
-
-                                <li>
-                                    Aún no hay recomendaciones
-                                </li>
-
-                                {% endfor %}
-
-                            </ul>
-
-                        </div>
-                    </div>
-
-
-                    <!-- REGALÍAS ABAJO -->
-                    {% if role == 'Administrador' or role == 'Artista' or role == 'Discografica' %}
-
-                    <div class="col-12">
-
-                        <div class="dashboard-card">
-
-                            <h4 class="section-title">
-                                💸 Regalías del Mes
-                            </h4>
-
-                            <ul class="music-list">
-
-                                {% for regalia in reporte_regalias %}
-
-                                <li>
-
-                                    <strong>
-                                        {{ regalia.Artista }}
-                                    </strong>
-
-                                    <span class="price">
-                                        ${{ regalia.PagoTotalUSD|floatformat:2 }}
-                                    </span>
-
-                                </li>
-
-                                {% empty %}
-
-                                <li>
-                                    No existen regalías disponibles
-                                </li>
-
-                                {% endfor %}
-
-                            </ul>
-
-                        </div>
-
-                    </div>
-
-                    {% endif %}
-
-                </div>
-
+<div class="hero-band">
+    <div class="hero-inner">
+            <div class="hero-eyebrow">
+                <span class="hero-dot"></span>
+                Bienvenido de vuelta
             </div>
-        </div>
+            <h1 class="hero-title">
+                La música<br>que te <span class="accent">mueve</span>
+            </h1>
+            <p class="hero-desc">
+                Descubre, reproduce y comparte millones de canciones de tus artistas favoritos en FluxMusic.
+            </p>
     </div>
 </div>
 
+<div class="dash-content">
+    <div class="section-head">
+        <h2>Escuchado Recientemente</h2>
+        <p>Tu historial de reproducción</p>
+    </div>
+    <div class="recents-row" id="recentsRow">
+        {% for item in historial_reciente %}
+        <div class="recent-card"
+            data-id="{{ item.CancionId }}"
+            data-title="{{ item.Cancion }}"
+            data-artist="{{ item.Artista|default:'Varios Artistas' }}"
+            data-artist-id="{{ item.ArtistaId }}"
+            data-duration="{{ item.Duracion|default:'00:03:00' }}">
+            <div class="recent-thumb">
+                <div class="thumb-placeholder">🎵</div>
+                <div class="play-overlay">
+                    <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </div>
+            </div>
+            <div class="recent-song">{{ item.Cancion }}</div>
+            <div class="recent-artist">{{ item.Artista }}</div>
+        </div>
+        {% empty %}
+        <p class="empty-state" id="recentsEmptyState">Aún no has escuchado nada. Dale play a una canción 🎧</p>
+        {% endfor %}
+    </div>
+
+    <div class="bottom-grid">
+        <div class="panel">
+            <div class="panel-title">🎵 Top Canciones</div>
+            <div class="panel-sub">Tus tracks más reproducidos</div>
+            <ul class="mlist">
+                {% for item in reporte_consumo %}
+                <li class="cancion-clickable" style="cursor: pointer;"
+                    data-id="{{ item.CancionId }}"
+                    data-title="{{ item.Cancion }}"
+                    data-artist="{{ item.Artista|default:'Varios Artistas' }}"
+                    data-artist-id="{{ item.ArtistaId }}"
+                    data-duration="{{ item.Duracion|default:'00:03:00' }}">
+                    <span class="track-num">{{ forloop.counter }}</span>
+                    <div class="track-dot">🎶</div>
+                    <div class="track-info">
+                        <div class="track-name">{{ item.Cancion }}</div>
+                    </div>
+                    <span class="track-streams">{{ item.Frecuencia }} streams</span>
+                </li>
+                {% empty %}
+                <li><span class="empty-state">Sin historial de escucha</span></li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="panel">
+            <ul class="mlist" id="recomendacionesList">
+                {% for item in recomendaciones %}
+                <li class="cancion-clickable" style="cursor: pointer;"
+                    data-id="{{ item.CancionId }}"
+                    data-title="{{ item.Recomendacion }}"
+                    data-artist="{{ item.Artista|default:'Varios Artistas' }}"
+                    data-artist-id="{{ item.ArtistaId }}"
+                    data-duration="{{ item.Duracion|default:'00:03:00' }}">
+                    <div class="track-dot">💿</div>
+                    <div class="track-info">
+                        <div class="track-name">{{ item.Recomendacion }}</div>
+                        <div style="font-size:.71rem;color:#505878;margin-top:.1rem">{{ item.Artista }}</div>
+                    </div>
+                    <span class="rec-genre">{{ item.Genero_Musical }}</span>
+                    <button class="add-to-lib-btn" title="Agregar a tu biblioteca" data-add-id="{{ item.CancionId }}">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </li>
+                {% empty %}
+                <li><span class="empty-state">Aún no hay recomendaciones</span></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="section-head">
+        <span class="s-bar" style="background:linear-gradient(90deg,#7c5cff,#bc42ca)"></span>
+        <h2>Tu ADN Musical</h2>
+        <p>Resumen de tu comportamiento musical</p>
+    </div>
+
+
+
+
+
+    <div class="adn-grid">
+        <div class="adn-card">
+            <span class="adn-label">Tiempo Escuchado</span>
+            <div class="ring-wrap">
+                <svg viewBox="0 0 110 110">
+                    <circle class="ring-bg" cx="55" cy="55" r="45"/>
+                    <circle class="ring-prog" cx="55" cy="55" r="45"
+                            style="stroke:#7c5cff;filter:drop-shadow(0 0 7px rgba(124,92,255,.75))"/>
+                </svg>
+                <div class="ring-inner">
+                    <span class="ring-pct">{{ adn_musical.actividad_pct }}%</span>
+                    <span class="ring-sub">Actividad</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="adn-card">
+            <span class="adn-label">Género Favorito</span>
+            <div class="ring-wrap">
+                <svg viewBox="0 0 110 110">
+                    <circle class="ring-bg" cx="55" cy="55" r="45"/>
+                    <circle class="ring-prog" cx="55" cy="55" r="45"
+                            style="stroke:#7c5cff;filter:drop-shadow(0 0 7px rgba(124,92,255,.75))"/>
+
+                </svg>
+                <div class="ring-inner">
+                    <span class="ring-pct">{{ adn_musical.genero_pct }}%</span>
+                    <span class="ring-sub">{{ adn_musical.genero_favorito }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="adn-card">
+            <span class="adn-label">Artista Favorito</span>
+            <div class="ring-wrap">
+                <svg viewBox="0 0 110 110">
+                    <circle class="ring-bg" cx="55" cy="55" r="45"/>
+                    <circle class="ring-prog" cx="55" cy="55" r="45"
+                            style="stroke:#7c5cff;filter:drop-shadow(0 0 7px rgba(124,92,255,.75))"/>
+                </svg>
+                <div class="ring-inner">
+                    <span class="ring-pct">{{ adn_musical.artista_pct }}%</span>
+                    <span class="ring-sub">{{ adn_musical.artista_favorito }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="adn-card">
+            <span class="adn-label">Mood del Mes</span>
+            <div class="ring-wrap">
+                <svg viewBox="0 0 110 110">
+                    <circle class="ring-bg" cx="55" cy="55" r="45"/>
+                    <circle class="ring-prog" cx="55" cy="55" r="45"
+                            style="stroke:#7c5cff;filter:drop-shadow(0 0 7px rgba(124,92,255,.75))"/>
+                </svg>
+                <div class="ring-inner">
+                    <span class="ring-pct">{{ adn_musical.mood_pct }}%</span>
+                    <span class="ring-sub">{{ adn_musical.mood }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+        
+    {% if role == 'Administrador' or role == 'Artista' or role == 'Discografica' %}
+    <div class="regalias-panel">
+        <div class="panel-title">💸 Regalías del Mes</div>
+        <div class="panel-sub">Ingresos por reproducción</div>
+        {% for regalia in reporte_regalias %}
+        <div class="regal-item">
+            <span class="regal-name">{{ regalia.Artista }}</span>
+            <span class="regal-amount">${{ regalia.PagoTotalUSD|floatformat:2 }}</span>
+        </div>
+        {% empty %}
+        <p class="empty-state">No existen regalías disponibles</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+</div>
 
 {% endblock %}

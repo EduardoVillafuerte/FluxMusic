@@ -144,7 +144,7 @@ Mi Perfil
                     </span>
 
                     <h5>
-                        {{ usuario.1 }}
+                        {{ usuario.nickname }}
                     </h5>
 
                 </div>
@@ -160,7 +160,7 @@ Mi Perfil
                     </span>
 
                     <h5>
-                        {{ usuario.2 }}
+                        {{ usuario.correo }}
                     </h5>
 
                 </div>
@@ -176,7 +176,7 @@ Mi Perfil
                     </span>
 
                     <h5>
-                        {{ usuario.4 }}
+                       {{ usuario.rolPerfil }}
                     </h5>
 
                 </div>
@@ -192,7 +192,7 @@ Mi Perfil
                     </span>
 
                     <h5>
-                        {{ usuario.3 }}
+                       {{ usuario.pais }}
                     </h5>
 
                 </div>
@@ -203,18 +203,12 @@ Mi Perfil
 
         <div class="actions-container">
 
-            <a href="{% url 'editar_perfil' %}"
-               class="btn btn-outline-light">
-
+            <a href="{% url 'usuarios:editar_perfil' %}" class="btn btn-outline-light">
                 Editar Perfil
-
             </a>
 
-            <a href="{% url 'cambiar_password' %}"
-               class="btn btn-outline-light">
-
+            <a href="{% url 'usuarios:cambiar_password' %}" class="btn btn-outline-light">
                 Cambiar Contraseña
-
             </a>
 
         </div>

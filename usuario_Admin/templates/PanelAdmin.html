@@ -6,6 +6,7 @@
     <title>FluxMusic - Usuarios</title>
     <!-- Bootstrap 5 CSS CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <!-- Estilos Personalizados basados en la identidad de FluxMusic -->
     <style>
@@ -139,6 +140,41 @@
             color: #64748b;
             font-style: italic;
         }
+
+        /* --- Tabs del panel --- */
+        .flux-tabs {
+            border-bottom: 1px solid #2a2f3a;
+            margin-bottom: 1.5rem;
+        }
+        .flux-tabs .nav-link {
+            color: #8a94a6;
+            font-weight: 600;
+            border: none;
+            background: transparent;
+            padding: 10px 20px;
+            transition: 0.3s;
+        }
+        .flux-tabs .nav-link:hover { color: #fff; }
+        .flux-tabs .nav-link.active {
+            color: #2fdbb7;
+            border-bottom: 2px solid #2fdbb7;
+        }
+
+        .badge-regalias {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-outline-danger-flux {
+            background-color: transparent;
+            color: #ff6b6b;
+            border: 1px solid rgba(255, 107, 107, 0.4);
+        }
+        .btn-outline-danger-flux:hover {
+            background-color: #ff6b6b;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -152,14 +188,49 @@
                 <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
                     <div>
                         <h1 class="brand-title">FLUX<span>MUSIC</span></h1>
-                        <p class="subtitle-text mb-0">Panel de Control / Usuarios</p>
+                        <p class="subtitle-text mb-0">Panel de Control / Administración</p>
                     </div>
-                    <div class="text-sm-end">
+                    <div class="text-sm-end d-flex flex-wrap gap-2 justify-content-sm-end">
+                        <span class="badge badge-regalias px-3 py-2 rounded-pill">
+                            <i class="fa-solid fa-dollar-sign"></i> Regalías totales pagadas: ${{ regalias_totales }}
+                        </span>
                         <span id="counter-badge" class="badge bg-dark text-secondary border border-secondary px-3 py-2 rounded-pill">
                             Total: {{ usuarios|length }} registrados
                         </span>
                     </div>
                 </div>
+
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %}" style="background-color:#222630; border:1px solid #2a2f3a; color:#dde3f0;">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+
+                <!-- TABS -->
+                <ul class="nav flux-tabs" id="adminTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="usuarios-tab" data-bs-toggle="tab" data-bs-target="#usuarios" type="button" role="tab">
+                            <i class="fa-solid fa-users"></i> Usuarios
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="canciones-tab" data-bs-toggle="tab" data-bs-target="#canciones" type="button" role="tab">
+                            <i class="fa-solid fa-music"></i> Canciones
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="albumes-tab" data-bs-toggle="tab" data-bs-target="#albumes" type="button" role="tab">
+                            <i class="fa-solid fa-compact-disc"></i> Álbumes
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="adminTabsContent">
+
+                <!-- ============ TAB: USUARIOS ============ -->
+                <div class="tab-pane fade show active" id="usuarios" role="tabpanel">
 
                 <!-- SECCIÓN DE FILTROS (Interactiva) -->
                 <div class="filter-section mb-4">
@@ -191,6 +262,7 @@
                                 <th>Nickname</th>
                                 <th>Correo Electrónico</th>
                                 <th>País</th>
+                                <th class="text-center">Acciones</th> </tr>
                             </tr>
                         </thead>
                         <tbody>
@@ -204,6 +276,16 @@
                                 </td>
                                 <td>{{ usuario.email }}</td>
                                 <td class="text-secondary">{{ usuario.pais }}</td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-outline-info" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#modalCambiarRol"
+                                            data-userid="{{ usuario.usuarioId }}"
+                                            data-userrol="{{ usuario.rolPerfil }}"
+                                            data-usernick="{{ usuario.nickname }}">
+                                        <i class="fa-solid fa-pen-to-square"></i> Editar Rol
+                                    </button>
+                                </td>
                             </tr>
                             {% empty %}
                             <tr id="absolute-empty">
@@ -222,12 +304,257 @@
                         </tbody>
                     </table>
                 </div>
+                </div>
+                <!-- ============ FIN TAB: USUARIOS ============ -->
+
+                <!-- ============ TAB: CANCIONES ============ -->
+                <div class="tab-pane fade" id="canciones" role="tabpanel">
+                    <div class="filter-section mb-4">
+                        <div class="input-group">
+                            <span class="input-group-text input-group-text-flux">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                            </span>
+                            <input type="text" id="search-canciones" class="form-control form-flux-input" placeholder="Buscar canción por título, álbum o artista...">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-flux table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Canción</th>
+                                    <th>Álbum</th>
+                                    <th>Artista</th>
+                                    <th>Duración</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for c in canciones %}
+                                <tr class="cancion-row">
+                                    <td>{{ c.Cancion }}</td>
+                                    <td class="text-secondary">{{ c.Album }}</td>
+                                    <td class="text-secondary">{{ c.Artista }}</td>
+                                    <td class="text-secondary">{{ c.Duracion }}</td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-danger-flux"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modalEliminarCancion"
+                                                data-cancionid="{{ c.CancionId }}"
+                                                data-canciontitulo="{{ c.Cancion }}">
+                                            <i class="fa-solid fa-trash"></i> Eliminar
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-5 empty-row">
+                                        No hay canciones registradas en el catálogo.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                <tr id="no-results-canciones" style="display:none;">
+                                    <td colspan="5" class="text-center py-5 empty-row">
+                                        No se encontraron canciones que coincidan con la búsqueda.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- ============ FIN TAB: CANCIONES ============ -->
+
+                <!-- ============ TAB: ÁLBUMES ============ -->
+                <div class="tab-pane fade" id="albumes" role="tabpanel">
+                    <div class="filter-section mb-4">
+                        <div class="input-group">
+                            <span class="input-group-text input-group-text-flux">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                            </span>
+                            <input type="text" id="search-albumes" class="form-control form-flux-input" placeholder="Buscar álbum por título o artista...">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-flux table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Álbum</th>
+                                    <th>Artista</th>
+                                    <th>Fecha de lanzamiento</th>
+                                    <th>Canciones</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for a in albumes %}
+                                <tr class="album-row">
+                                    <td>{{ a.Album }}</td>
+                                    <td class="text-secondary">{{ a.Artista }}</td>
+                                    <td class="text-secondary">{{ a.Fecha }}</td>
+                                    <td class="text-secondary">{{ a.TotalCanciones }}</td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-danger-flux"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modalEliminarAlbum"
+                                                data-albumid="{{ a.AlbumId }}"
+                                                data-albumtitulo="{{ a.Album }}"
+                                                data-albumcanciones="{{ a.TotalCanciones }}">
+                                            <i class="fa-solid fa-trash"></i> Eliminar
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-5 empty-row">
+                                        No hay álbumes registrados en el catálogo.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                <tr id="no-results-albumes" style="display:none;">
+                                    <td colspan="5" class="text-center py-5 empty-row">
+                                        No se encontraron álbumes que coincidan con la búsqueda.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- ============ FIN TAB: ÁLBUMES ============ -->
+
+                </div>
             </div>
 
         </div>
     </div>
 </div>
+<div class="modal fade" id="modalCambiarRol" tabindex="-1" aria-labelledby="modalCambiarRolLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background-color: #1a1d24; border: 1px solid #2a2f3a; color: #fff;">
+            <div class="modal-header" style="border-bottom: 1px solid #2a2f3a;">
+                <h5 class="modal-title" id="modalCambiarRolLabel">
+                    Cambiar Rol: <span id="modalUserNick" class="text-info"></span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form method="POST" action="{% url 'actualizar_rol_usuario' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="usuario_id" id="modalUserId">
+                    
+                    <label class="form-label text-secondary mb-2">Selecciona el nuevo rol:</label>
+                    <select name="nuevo_rol" id="modalUserRol" class="form-select form-flux-select" required>
+                        <option value="Oyente">Oyente</option>
+                        <option value="Artista">Artista</option>
+                        <option value="Discografica">Discográfica</option>
+                    </select>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #2a2f3a;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" style="background-color: #7c5cff; border-color: #7c5cff;">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
+<!-- MODAL: Eliminar Canción -->
+<div class="modal fade" id="modalEliminarCancion" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background-color: #1a1d24; border: 1px solid #2a2f3a; color: #fff;">
+            <div class="modal-header" style="border-bottom: 1px solid #2a2f3a;">
+                <h5 class="modal-title"><i class="fa-solid fa-triangle-exclamation text-danger me-2"></i> Eliminar canción</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'eliminar_cancion_admin' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="cancion_id" id="modalCancionId">
+                    <p class="text-secondary mb-0">
+                        ¿Confirmas eliminar <strong id="modalCancionTitulo" class="text-white"></strong>?
+                        Se quitará también de playlists, likes e historial de reproducciones. Esta acción no se puede deshacer.
+                    </p>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #2a2f3a;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger"><i class="fa-solid fa-trash"></i> Eliminar definitivamente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Eliminar Álbum -->
+<div class="modal fade" id="modalEliminarAlbum" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background-color: #1a1d24; border: 1px solid #2a2f3a; color: #fff;">
+            <div class="modal-header" style="border-bottom: 1px solid #2a2f3a;">
+                <h5 class="modal-title"><i class="fa-solid fa-triangle-exclamation text-danger me-2"></i> Eliminar álbum</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'eliminar_album_admin' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="album_id" id="modalAlbumId">
+                    <p class="text-secondary mb-0">
+                        ¿Confirmas eliminar <strong id="modalAlbumTitulo" class="text-white"></strong>?
+                        Esto también eliminará <strong id="modalAlbumCanciones" class="text-white">0</strong> canción(es) que pertenecen a este álbum, junto con sus playlists, likes y reproducciones asociadas. Esta acción no se puede deshacer.
+                    </p>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #2a2f3a;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger"><i class="fa-solid fa-trash"></i> Eliminar definitivamente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Script para llenar el Modal con los datos del usuario seleccionado
+    const modalCambiarRol = document.getElementById('modalCambiarRol')
+    if (modalCambiarRol) {
+        modalCambiarRol.addEventListener('show.bs.modal', event => {
+            // El botón que activó el modal
+            const button = event.relatedTarget
+            
+            // Extraer info de los atributos data-bs-*
+            const userId = button.getAttribute('data-userid')
+            const userRol = button.getAttribute('data-userrol')
+            const userNick = button.getAttribute('data-usernick')
+            
+            // Actualizar el contenido del modal
+            document.getElementById('modalUserId').value = userId
+            document.getElementById('modalUserNick').textContent = userNick
+            
+            // Seleccionar el rol actual en el dropdown
+            const selectRol = document.getElementById('modalUserRol')
+            selectRol.value = userRol
+        })
+    }
+
+    // Modal de eliminar canción
+    const modalEliminarCancion = document.getElementById('modalEliminarCancion')
+    if (modalEliminarCancion) {
+        modalEliminarCancion.addEventListener('show.bs.modal', event => {
+            const button = event.relatedTarget
+            document.getElementById('modalCancionId').value = button.getAttribute('data-cancionid')
+            document.getElementById('modalCancionTitulo').textContent = button.getAttribute('data-canciontitulo')
+        })
+    }
+
+    // Modal de eliminar álbum
+    const modalEliminarAlbum = document.getElementById('modalEliminarAlbum')
+    if (modalEliminarAlbum) {
+        modalEliminarAlbum.addEventListener('show.bs.modal', event => {
+            const button = event.relatedTarget
+            document.getElementById('modalAlbumId').value = button.getAttribute('data-albumid')
+            document.getElementById('modalAlbumTitulo').textContent = button.getAttribute('data-albumtitulo')
+            document.getElementById('modalAlbumCanciones').textContent = button.getAttribute('data-albumcanciones')
+        })
+    }
+</script>
 <!-- Bootstrap 5 JS Bundle CDN -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -277,6 +604,30 @@
         // Escucha los eventos del teclado y del cambio de selector
         searchInput.addEventListener("keyup", filterTable);
         filterColumn.addEventListener("change", filterTable);
+
+        // ── Filtro simple reutilizable para Canciones y Álbumes ──
+        function activarFiltroSimple(inputId, rowSelector, noResultsId) {
+            const input = document.getElementById(inputId);
+            const rows = document.querySelectorAll(rowSelector);
+            const noResults = document.getElementById(noResultsId);
+            if (!input) return;
+
+            input.addEventListener("keyup", function () {
+                const term = input.value.toLowerCase().trim();
+                let visibleCount = 0;
+                rows.forEach(row => {
+                    const match = row.textContent.toLowerCase().includes(term);
+                    row.style.display = match ? "" : "none";
+                    if (match) visibleCount++;
+                });
+                if (noResults) {
+                    noResults.style.display = (visibleCount === 0 && rows.length > 0) ? "" : "none";
+                }
+            });
+        }
+
+        activarFiltroSimple("search-canciones", ".cancion-row", "no-results-canciones");
+        activarFiltroSimple("search-albumes", ".album-row", "no-results-albumes");
     });
 </script>
 </body>

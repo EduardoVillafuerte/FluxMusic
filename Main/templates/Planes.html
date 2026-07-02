@@ -1,0 +1,78 @@
+{% extends 'Mainbase.html' %}
+{% load static %}
+
+{% block title %}Planes de Suscripción - FluxMusic{% endblock %}
+
+{% block extra_css %}
+<style>
+    .planes-container { max-width: 900px; margin: 3rem auto; padding: 0 2rem; text-align: center; }
+    .planes-header h1 { color: #fff; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 2.5rem; margin-bottom: 1rem; }
+    .planes-header p { color: #8892aa; font-size: 1.1rem; margin-bottom: 3rem; }
+    .planes-grid { display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; }
+    .plan-card { background: #0e1018; border: 1px solid #2a2f3a; border-radius: 20px; padding: 2.5rem; width: 100%; max-width: 350px; transition: transform 0.3s ease, border-color 0.3s ease; position: relative; overflow: hidden; }
+    .plan-card:hover { transform: translateY(-10px); border-color: #7c5cff; }
+    .plan-card.premium::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #7c5cff, #bc42ca); }
+    .plan-type { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 700; color: #fff; margin-bottom: 1rem; }
+    .plan-price { font-size: 3rem; font-weight: 800; color: #2fdbb7; margin-bottom: 1.5rem; }
+    .plan-price span { font-size: 1rem; color: #8892aa; font-weight: 400; }
+    .btn-plan { background: rgba(124, 92, 255, 0.1); color: #a78bfa; border: 1px solid rgba(124, 92, 255, 0.3); padding: 0.8rem 2rem; border-radius: 12px; font-weight: 600; width: 100%; transition: 0.3s; cursor: pointer; }
+    .plan-card.premium .btn-plan { background: #7c5cff; color: #fff; border: none; }
+    .btn-plan:hover { background: #bc42ca; color: #fff; transform: scale(1.05); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="planes-container">
+    <div class="planes-header">
+        <h1>Elige tu ritmo</h1>
+        <p>Desbloquea el acceso ilimitado a tu música favorita sin interrupciones.</p>
+    </div>
+
+    <div class="planes-grid">
+        {% for plan in planes %}
+        <div class="plan-card {% if plan.tipoPlan == 'Premium' %}premium{% endif %}">
+            <div class="plan-type">{{ plan.tipoPlan }}</div>
+            <div class="plan-price">${{ plan.precio|floatformat:-2 }}<span>/mes</span></div>
+            
+            <p style="color:#8892aa; margin-bottom: 2rem;">
+                {% if plan.tipoPlan == 'Free' %}Acceso al catálogo con anuncios y calidad estándar.{% else %}Sin anuncios, alta calidad de audio y descargas offline.{% endif %}
+            </p>
+            
+            <button class="btn btn-plan" onclick="seleccionarPlan('{{ plan.tipoPlan }}')">
+                {% if request.session.rol == plan.tipoPlan or request.session.plan_tipo == plan.tipoPlan %}
+                    Plan Activo
+                {% else %}
+                    Seleccionar {{ plan.tipoPlan }}
+                {% endif %}
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function seleccionarPlan(tipoPlan) {
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+        fetch("{% url 'Main:cambiar_plan' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({ tipoPlan: tipoPlan })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.ok) {
+            alert('¡Tu plan ha sido actualizado con éxito!');
+            location.reload(); // Recarga la página para ver los cambios del layout base
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(err => console.error('Error actualizando el plan:', err));
+}
+</script>
+{% csrf_token %}
+{% endblock %}

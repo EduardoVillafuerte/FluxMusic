@@ -1,0 +1,223 @@
+{% extends 'Mainbase.html' %}
+{% load static %}
+
+{% block title %}Mis Estadísticas - FluxMusic{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-wrap { max-width: 1000px; margin: 2.5rem auto; padding: 0 1.5rem; }
+    .stats-wrap h1 { color: #fff; font-family: 'Syne', sans-serif; font-weight: 800; margin-bottom: 1.8rem; }
+
+    /* ── Tarjetas de métricas ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.2rem; margin-bottom: 2.5rem; }
+    .stat-card {
+        background: #0e1018; border: 1px solid #1a1e2b; border-radius: 16px;
+        padding: 1.4rem; display: flex; align-items: center; gap: 1rem;
+    }
+    .stat-icon {
+        width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center; font-size: 1.3rem;
+        background: rgba(124,92,255,.12); color: #a78bfa;
+    }
+    .stat-icon.green { background: rgba(47,219,183,.12); color: #2fdbb7; }
+    .stat-icon.pink { background: rgba(188,66,202,.12); color: #e07be0; }
+    .stat-icon.gold { background: rgba(245,158,11,.12); color: #f59e0b; }
+    .stat-value { color: #fff; font-size: 1.5rem; font-weight: 800; line-height: 1; font-family: 'Syne', sans-serif; }
+    .stat-label { color: #8892aa; font-size: .78rem; margin-top: .3rem; }
+
+    /* ── Secciones ── */
+    .stats-section {
+        background: #0e1018; border: 1px solid #1a1e2b; border-radius: 18px;
+        padding: 1.8rem; margin-bottom: 2rem;
+    }
+    .stats-section h3 { color: #fff; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.05rem; margin-bottom: 1.4rem; }
+
+    /* ── Gráfico de barras (CSS puro) ── */
+    .bar-chart { display: flex; align-items: flex-end; gap: 1rem; height: 180px; padding: 0 .5rem; }
+    .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+    .bar-fill {
+        width: 60%; min-height: 4px; border-radius: 6px 6px 0 0;
+        background: linear-gradient(180deg, #bc42ca, #7c5cff);
+        transition: height .4s ease;
+    }
+    .bar-count { color: #dde3f0; font-size: .72rem; margin-bottom: .4rem; font-weight: 600; }
+    .bar-label { color: #8892aa; font-size: .72rem; margin-top: .6rem; }
+    .stats-empty { color: #505878; font-size: .85rem; text-align: center; padding: 1.5rem 0; }
+
+    /* ── Top canciones ── */
+    .top-song-row { display: flex; align-items: center; gap: 1rem; padding: .7rem 0; border-bottom: 1px solid #1a1e2b; }
+    .top-song-row:last-child { border-bottom: none; }
+    .top-rank { color: #7c5cff; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem; width: 24px; }
+    .top-song-title { color: #dde3f0; font-weight: 600; font-size: .9rem; flex: 1; }
+    .top-song-count { color: #2fdbb7; font-weight: 700; font-size: .85rem; }
+
+    /* ── Discográfica ── */
+    .disc-box { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+    .disc-info { color: #8892aa; font-size: .88rem; }
+    .disc-info strong { color: #fff; }
+    .btn-danger-outline {
+        background: rgba(255,80,80,.1); color: #ff6b6b; border: 1px solid rgba(255,80,80,.3);
+        padding: .7rem 1.4rem; border-radius: 10px; font-weight: 600; font-size: .85rem; cursor: pointer; transition: .2s;
+    }
+    .btn-danger-outline:hover { background: #ff6b6b; color: #fff; }
+
+    /* ── Modal de confirmación ── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 3000; display: flex; align-items: center; justify-content: center; }
+    .modal-box { background: #161a24; border: 1px solid #2a2f3a; border-radius: 16px; padding: 1.8rem; width: 90%; max-width: 420px; }
+    .modal-box h3 { color: #fff; margin-bottom: .8rem; font-weight: 700; display: flex; align-items: center; gap: .6rem; }
+    .modal-box p { color: #8892aa; font-size: .88rem; line-height: 1.5; margin-bottom: .8rem; }
+    .modal-warning {
+        background: rgba(255,80,80,.08); border: 1px solid rgba(255,80,80,.25); border-radius: 10px;
+        padding: .8rem 1rem; color: #ff9b9b; font-size: .82rem; margin-bottom: 1.4rem;
+    }
+    .modal-actions { display: flex; justify-content: flex-end; gap: .7rem; }
+    .btn-secondary, .btn-confirm-danger {
+        padding: .55rem 1.2rem; border-radius: 10px; font-weight: 600; font-size: .85rem; cursor: pointer; border: none;
+    }
+    .btn-secondary { background: transparent; color: #8a94a6; border: 1px solid #2a2f3a; }
+    .btn-secondary:hover { color: #fff; }
+    .btn-confirm-danger { background: #ff6b6b; color: #fff; }
+    .btn-confirm-danger:hover { background: #ff4d4d; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="stats-wrap">
+    <h1>📊 Mis Estadísticas</h1>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fa-solid fa-play"></i></div>
+            <div>
+                <div class="stat-value">{{ total_reproducciones }}</div>
+                <div class="stat-label">Reproducciones totales</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green"><i class="fa-solid fa-user-group"></i></div>
+            <div>
+                <div class="stat-value">{{ total_seguidores }}</div>
+                <div class="stat-label">Seguidores</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon pink"><i class="fa-solid fa-heart"></i></div>
+            <div>
+                <div class="stat-value">{{ total_likes }}</div>
+                <div class="stat-label">Me gustas recibidos</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon gold"><i class="fa-solid fa-dollar-sign"></i></div>
+            <div>
+                <div class="stat-value">${{ regalias_mes_actual }}</div>
+                <div class="stat-label">Regalías último periodo</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-section">
+        <h3>🎧 Reproducciones por mes</h3>
+        {% if reproducciones_por_mes %}
+        <div class="bar-chart">
+            {% for m in reproducciones_por_mes %}
+            <div class="bar-col">
+                <div class="bar-count">{{ m.total }}</div>
+                <div class="bar-fill" style="height: {{ m.porcentaje }}%;"></div>
+                <div class="bar-label">{{ m.mes }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="stats-empty">Aún no hay suficientes reproducciones para mostrar una tendencia mensual.</p>
+        {% endif %}
+    </div>
+
+    <div class="stats-section">
+        <h3>🏆 Tus canciones más escuchadas</h3>
+        {% for c in top_canciones %}
+        <div class="top-song-row">
+            <div class="top-rank">{{ forloop.counter }}</div>
+            <div class="top-song-title">{{ c.Cancion }}</div>
+            <div class="top-song-count">{{ c.Reproducciones }} reproducciones</div>
+        </div>
+        {% empty %}
+        <p class="stats-empty">Todavía no tienes reproducciones registradas en tus canciones.</p>
+        {% endfor %}
+    </div>
+
+    <div class="stats-section">
+        <h3>🏷️ Discográfica</h3>
+        <div class="disc-box">
+            {% if tiene_discografica %}
+                <div class="disc-info">Actualmente perteneces a <strong>{{ discografica_nombre|default:"tu discográfica" }}</strong>.</div>
+                <button type="button" class="btn-danger-outline" id="btnSalirDiscografica">
+                    <i class="fa-solid fa-right-from-bracket"></i> Salir de la discográfica
+                </button>
+            {% else %}
+                <div class="disc-info">Actualmente eres un artista <strong>independiente</strong> (no perteneces a ninguna discográfica).</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if tiene_discografica %}
+<div id="modalSalirDiscografica" class="modal-overlay" style="display:none;">
+    <div class="modal-box">
+        <h3><i class="fa-solid fa-triangle-exclamation" style="color:#ff6b6b;"></i> ¿Salir de la discográfica?</h3>
+        <p>Esta acción es inmediata y pasarás a ser un artista independiente dentro de FluxMusic.</p>
+        <div class="modal-warning">
+            <i class="fa-solid fa-circle-info"></i>
+            Al salir ahora, <strong>no recibirás el pago de regalías correspondiente a este mes</strong>, ya que la liquidación se calcula sobre artistas activos dentro de una discográfica al cierre del periodo.
+        </div>
+        <div class="modal-actions">
+            <button type="button" id="btnCancelarSalir" class="btn-secondary">Cancelar</button>
+            <button type="button" id="btnConfirmarSalir" class="btn-confirm-danger">Sí, salir de todos modos</button>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+{% if tiene_discografica %}
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('modalSalirDiscografica');
+    const btnAbrir = document.getElementById('btnSalirDiscografica');
+    const btnCancelar = document.getElementById('btnCancelarSalir');
+    const btnConfirmar = document.getElementById('btnConfirmarSalir');
+
+    btnAbrir.addEventListener('click', () => { modal.style.display = 'flex'; });
+    btnCancelar.addEventListener('click', () => { modal.style.display = 'none'; });
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+
+    btnConfirmar.addEventListener('click', () => {
+        btnConfirmar.disabled = true;
+        btnConfirmar.textContent = 'Procesando...';
+
+        fetch("{% url 'Main:salir_discografica' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.ok) {
+                alert(data.mensaje || 'Has salido de la discográfica.');
+                location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'No se pudo completar la acción.'));
+                btnConfirmar.disabled = false;
+                btnConfirmar.textContent = 'Sí, salir de todos modos';
+            }
+        })
+        .catch(err => {
+            console.error('Error saliendo de la discográfica:', err);
+            btnConfirmar.disabled = false;
+            btnConfirmar.textContent = 'Sí, salir de todos modos';
+        });
+    });
+});
+{% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends 'Mainbase.html' %}
+{% load static %}
+
+{% block title %}Subir Canción - FluxMusic{% endblock %}
+
+{% block extra_css %}
+<style>
+
+.duration-preview {
+    font-size: .78rem;
+    color: #2fdbb7;
+    margin-top: .4rem;
+    min-height: 1.1rem;
+    font-weight: 600;
+}
+.duration-preview.invalid { color: #ff6b6b; }
+.upload-wrap { max-width: 700px; margin: 2.5rem auto; padding: 0 1.5rem; }
+.upload-wrap h1 { color: #fff; font-family: 'Syne', sans-serif; font-weight: 800; margin-bottom: 1.8rem; }
+.upload-form {
+    background: #0e1018; border: 1px solid #1a1e2b; border-radius: 18px;
+    padding: 1.8rem; display: flex; flex-direction: column; gap: 1.1rem;
+}
+.upload-form label { color: #8892aa; font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; margin-bottom: .3rem; display:block; }
+.upload-form input, .upload-form select {
+    width: 100%; background: #141826; border: 1px solid #2a2f3a; border-radius: 10px;
+    padding: .7rem 1rem; color: #dde3f0; font-size: .9rem; outline: none;
+}
+.upload-form input:focus, .upload-form select:focus { border-color: #7c5cff; }
+.upload-form button {
+    background: linear-gradient(135deg, #7c5cff, #bc42ca); color: #fff; border: none;
+    border-radius: 10px; padding: .8rem; font-weight: 700; cursor: pointer; font-size: .9rem;
+}
+.album-toggle { display: flex; gap: 1rem; margin-bottom: .5rem; }
+.album-toggle label { display:flex; align-items:center; gap:.4rem; text-transform:none; font-weight:600; color:#dde3f0; cursor:pointer; }
+
+.my-songs-list { margin-top: 2.5rem; }
+.my-songs-list h3 { color:#fff; font-family:'Syne',sans-serif; margin-bottom: 1rem; }
+.song-item { display:flex; justify-content:space-between; padding:.7rem; border-bottom:1px solid #1a1e2b; color:#dde3f0; font-size:.85rem; }
+.song-item span:last-child { color:#505878; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="upload-wrap">
+    <h1>🎙️ Subir Nueva Canción</h1>
+
+    <form class="upload-form" method="POST" action="{% url 'Main:subir_cancion' %}">
+        {% csrf_token %}
+        <div>
+            <label>Título de la canción</label>
+            <input type="text" name="titulo" placeholder="Ej: Nueva ola" required maxlength="80">
+        </div>
+
+        <div>
+            <label>Duración (mm:ss)</label>
+            <input type="text" name="duracion" id="duracionInput" placeholder="Ej: 3:24" pattern="[0-9]{1,2}:[0-5][0-9]" required autocomplete="off">
+            <span class="duration-preview" id="duracionPreview"></span>
+        </div>
+
+        <div>
+            <label>Género</label>
+            <input type="text" name="genero" placeholder="Ej: Pop, Reggaeton, Rock...">
+        </div>
+
+        <div>
+            <label>Álbum</label>
+            <div class="album-toggle">
+                <label><input type="radio" name="album_opcion" value="existente" checked onclick="toggleAlbumInputs()"> Álbum existente</label>
+                <label><input type="radio" name="album_opcion" value="nuevo" onclick="toggleAlbumInputs()"> Crear nuevo álbum</label>
+            </div>
+            <select name="album_existente" id="albumExistenteSelect">
+                {% for a in mis_albumes %}
+                <option value="{{ a.albumID }}">{{ a.tituloAlbum }}</option>
+                {% empty %}
+                <option value="" disabled>No tienes álbumes aún — crea uno nuevo</option>
+                {% endfor %}
+            </select>
+            <input type="text" name="nombre_album_nuevo" id="nombreAlbumNuevo" placeholder="Nombre del nuevo álbum" style="display:none; margin-top:.6rem;">
+        </div>
+
+        <button type="submit">Publicar canción</button>
+    </form>
+
+    <div class="my-songs-list">
+        <h3>Tus canciones publicadas</h3>
+        {% for c in mis_canciones %}
+        <div class="song-item">
+            <span>{{ c.Cancion }} — {{ c.Album }}</span>
+            <span>{{ c.Duracion }}</span>
+        </div>
+        {% empty %}
+        <p class="empty-state" style="color:#505878;">Aún no has publicado ninguna canción.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleAlbumInputs() {
+    const esNuevo = document.querySelector('input[name="album_opcion"]:checked').value === 'nuevo';
+    document.getElementById('albumExistenteSelect').style.display = esNuevo ? 'none' : 'block';
+    document.getElementById('nombreAlbumNuevo').style.display = esNuevo ? 'block' : 'none';
+}
+
+document.getElementById('duracionInput').addEventListener('input', function() {
+    const preview = document.getElementById('duracionPreview');
+    const valor = this.value.trim();
+    const match = valor.match(/^(\d{1,2}):([0-5]\d)$/);
+
+    if (!valor) {
+        preview.textContent = '';
+        preview.classList.remove('invalid');
+        return;
+    }
+
+    if (match) {
+        const minutos = parseInt(match[1]);
+        const segundos = parseInt(match[2]);
+        const minTexto = minutos === 1 ? 'minuto' : 'minutos';
+        const segTexto = segundos === 1 ? 'segundo' : 'segundos';
+        preview.textContent = `≈ ${minutos} ${minTexto} y ${segundos} ${segTexto}`;
+        preview.classList.remove('invalid');
+    } else {
+        preview.textContent = 'Formato inválido — usa mm:ss (ej: 3:24)';
+        preview.classList.add('invalid');
+    }
+});
+</script>
+{% endblock %}

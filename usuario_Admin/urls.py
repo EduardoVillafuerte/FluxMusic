@@ -7,16 +7,8 @@ urlpatterns = [
         views.listar_usuarios,
         name='listar_usuarios'
     ),
+    path('actualizar-rol/', views.actualizar_rol_usuario, name='actualizar_rol_usuario'),
+    path('admin/cancion/eliminar/', views.eliminar_cancion_admin, name='eliminar_cancion_admin'),
+    path('admin/album/eliminar/', views.eliminar_album_admin, name='eliminar_album_admin'),
 
-    # path(
-    #     'admin/usuarios/',
-    #     views.admin_usuarios,
-    #     name='admin_usuarios'
-    # ),
-
-    # path(
-    #     'admin/usuarios/rol/<int:id_usuario>/',
-    #     views.cambiar_rol_usuario,
-    #     name='cambiar_rol_usuario'
-    # ),
 ]

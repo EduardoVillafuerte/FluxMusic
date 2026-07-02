@@ -51,9 +51,54 @@ def dashboard_negocio(request):
             cursor.execute("EXEC Streaming.sp_ReporteRecomendaciones %s", [oyente_id])
             recomendaciones = dictfetchall(cursor)
             
-            # Historial (Opcional, agregado para mantener el Main.html funcionando)
+            # Historial
             cursor.execute("EXEC Streaming.sp_HistorialReproduccion @OyenteId=%s", [oyente_id])
             historial_reciente = dictfetchall(cursor)
+
+    # ========= ADN MUSICAL =========
+    adn_musical = {
+        'actividad_pct': 0,
+        'genero_favorito': 'Sin datos',
+        'genero_pct': 0,
+        'artista_favorito': 'Sin datos',
+        'artista_pct': 0,
+        'mood': 'Sin datos',
+        'mood_pct': 0,
+    }
+    if oyente_id:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) FROM Streaming.ReproduccionLog WHERE Oyente_usuarioId = %s", [oyente_id])
+            total_plays = cursor.fetchone()[0]
+
+        if total_plays > 0:
+            adn_musical['actividad_pct'] = min(100, round((total_plays / 20) * 100))
+
+            with connection.cursor() as cursor:
+                cursor.execute("EXEC Streaming.sp_ReportePreferenciasGenero @OyenteId=%s", [oyente_id])
+                genero_stats = dictfetchall(cursor)
+
+            if genero_stats:
+                top_genero = genero_stats[0]
+                adn_musical['genero_favorito'] = top_genero['Genero_Musical']
+                total_minutos = sum(g['Minutos_Acumulados'] for g in genero_stats) or 1
+                adn_musical['genero_pct'] = round((top_genero['Minutos_Acumulados'] / total_minutos) * 100)
+                if len(genero_stats) > 1:
+                    segundo = genero_stats[1]
+                    adn_musical['mood'] = segundo['Genero_Musical']
+                    adn_musical['mood_pct'] = round((segundo['Minutos_Acumulados'] / total_minutos) * 100)
+                else:
+                    adn_musical['mood'] = top_genero['Genero_Musical']
+                    adn_musical['mood_pct'] = adn_musical['genero_pct']
+
+            with connection.cursor() as cursor:
+                cursor.execute("EXEC Streaming.sp_ReporteRankingArtistas @OyenteId=%s", [oyente_id])
+                artista_stats = dictfetchall(cursor)
+
+            if artista_stats:
+                top_artista = artista_stats[0]
+                adn_musical['artista_favorito'] = top_artista['Artista']
+                total_reproducciones = sum(a['Reproducciones'] for a in artista_stats) or 1
+                adn_musical['artista_pct'] = round((top_artista['Reproducciones'] / total_reproducciones) * 100)
 
     context = {
         'nickname': request.session.get('nickname'),
@@ -61,10 +106,10 @@ def dashboard_negocio(request):
         'reporte_regalias': reporte_regalias,
         'reporte_consumo': reporte_consumo,
         'recomendaciones': recomendaciones,
-        'historial_reciente': historial_reciente
+        'historial_reciente': historial_reciente,
+        'adn_musical': adn_musical,
     }
     return render(request, 'Main.html', context)
-
 
 def mi_biblioteca(request):
     if 'usuario_id' not in request.session:

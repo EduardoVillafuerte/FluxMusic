@@ -374,7 +374,7 @@
             <span class="nav-label" style="margin-top: 20px;">Tus Playlists</span>
             <div class="playlist-list">
                 {% for playlist in playlists %}
-                    <a href="{% url 'Main:playlist_detail' playlist.PlaylistID %}" class="nav-item {% if request.resolver_match.url_name == 'playlist_detail' and playlist.PlaylistID|stringformat:'s' == request.resolver_match.kwargs.playlist_id|stringformat:'s' %}active{% endif %}">
+                    <a href="{% url 'Main:playlist_detail' playlist.playlistID %}" class="nav-item {% if request.resolver_match.url_name == 'playlist_detail' and playlist.playlistID|stringformat:'s' == request.resolver_match.kwargs.playlist_id|stringformat:'s' %}active{% endif %}">
                         <i class="fa-solid fa-music"></i> <span>{{ playlist.Playlist }}</span>
                     </a>
                 {% empty %}

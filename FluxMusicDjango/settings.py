@@ -87,18 +87,14 @@ DATABASES = {
     'default': {
         'ENGINE': 'mssql',
         'NAME': 'FluxMusicDB',
-        'USER': 'FluxAdmin',
-        'PASSWORD': 'AdminPassword2026!',
-        'HOST': 'SHADOW-DKT',
+        'HOST': 'DESKTOP-T979ENV\\MSSQLSERVER03',
         'PORT': '',
         'OPTIONS': {
             'driver': 'ODBC Driver 17 for SQL Server',
-            'trusted_connection': 'no',
+            'trusted_connection': 'yes', 
         },
     },
 }
-
-
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
